@@ -335,6 +335,14 @@ wss.on('connection', (ws, req) => {
 
   console.log(`\n[Audio WS] Client connected, session: ${sessionId}`);
 
+  // Register session for live view polling
+  sessions.set(sessionId, {
+    transcriptId: sessionId,
+    clients: new Set(),
+    hintsBuffer: [],
+    segmentsBuffer: [],
+  });
+
   if (!process.env.DEEPGRAM_API_KEY) {
     ws.send(JSON.stringify({ type: 'error', error: 'DEEPGRAM_API_KEY not configured' }));
     ws.close();
@@ -403,6 +411,14 @@ wss.on('connection', (ws, req) => {
       // Broadcast transcript to ws/events + Socket.IO
       broadcastEvent({ type: 'transcript_final', text, speaker: { id: role, role }, timestamp: segment.timestamp });
       io.to(sessionId).emit('transcription', segment);
+
+      // Buffer for live view polling
+      const sess = sessions.get(sessionId);
+      if (sess) {
+        sess.segmentsBuffer = sess.segmentsBuffer || [];
+        sess.segmentsBuffer.push({ text, speaker: role, timestamp: segment.timestamp });
+        if (sess.segmentsBuffer.length > 50) sess.segmentsBuffer.shift();
+      }
 
       // ── LLM hint (throttled to 20s in claude.js) ──
       const hint = await claude.generateHintFromActiveInterview(sessionId, segment);
@@ -545,6 +561,8 @@ wss.on('connection', (ws, req) => {
     console.log(`[Audio WS] Client disconnected, session: ${sessionId}`);
     dg.close();
     claude.clearSession(sessionId);
+    // Keep session in map for 5 min so live view can still poll
+    setTimeout(() => sessions.delete(sessionId), 5 * 60 * 1000);
   });
 });
 

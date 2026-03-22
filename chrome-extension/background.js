@@ -98,7 +98,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   // Transcript + hints (from Track 2 via offscreen)
   if (msg.type === 'transcript_interim') {
-    broadcastToMeetTab({ type: 'transcript_interim', text: msg.text });
+    broadcastToMeetTab({ type: 'transcript_interim', text: msg.text, speaker: msg.speaker });
     return;
   }
 
@@ -108,7 +108,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'hint') {
-    broadcastToMeetTab({ type: 'hint', hint: msg.hint });
+    broadcastToMeetTab({ type: 'hint', hint: msg.hint, hint_type: msg.hint_type || 'llm' });
     return;
   }
 });

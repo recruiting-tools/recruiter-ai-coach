@@ -26,7 +26,7 @@
 
 ## В процессе / Следующее
 
-- [ ] **Diarize + WebM/Opus**: проверить на реальном звонке — данные по совместимости в Открытых вопросах
+- [x] **Diarize + WebM/Opus — VERIFIED** (2026-03-23): работает через streaming. 15 сегментов, 100% с speaker labels, recruiter/candidate корректно разделены. Ключевой фикс: `language=multi` вместо `language=ru` — иначе non-RU аудио не транскрибируется. Тест: `node scripts/test-diarize-webm.js`
 - [ ] **Vosk keyword spotter**: параллельный канал, PCM 16kHz → офлайн детект ключевых слов из CV/JD
 
 ---
