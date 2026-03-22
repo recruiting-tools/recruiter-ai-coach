@@ -11,7 +11,7 @@
  * Does NOT do: audio processing, transcription, hints. Those are Tracks 2 & 3.
  */
 
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'http://localhost:3000';
 
 // ── Capture state ─────────────────────────────────────────────────────────────
 let captureState = 'idle';   // mirrors offscreen STATE machine

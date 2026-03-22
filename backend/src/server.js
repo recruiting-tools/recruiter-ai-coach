@@ -294,6 +294,24 @@ io.on('connection', (socket) => {
 // ──────────────────────────────────────────────────
 
 const wss = new WebSocket.Server({ noServer: true });
+const wssEvents = new WebSocket.Server({ noServer: true });
+
+// Broadcast to all connected ws/events clients
+function broadcastEvent(event) {
+  const msg = JSON.stringify(event);
+  for (const client of wssEvents.clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(msg);
+    }
+  }
+}
+
+wssEvents.on('connection', (ws) => {
+  console.log(`[Events WS] Client connected (${wssEvents.clients.size} total)`);
+  ws.on('close', () => {
+    console.log(`[Events WS] Client disconnected (${wssEvents.clients.size} total)`);
+  });
+});
 
 // MUST use prependListener — Socket.IO's Engine.IO destroys sockets for non-matching paths.
 // Without prepend, Engine.IO's handler fires first and kills /ws/audio connections.
@@ -301,6 +319,10 @@ server.prependListener('upgrade', (req, socket, head) => {
   if (req.url.startsWith('/ws/audio')) {
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit('connection', ws, req);
+    });
+  } else if (req.url.startsWith('/ws/events')) {
+    wssEvents.handleUpgrade(req, socket, head, (ws) => {
+      wssEvents.emit('connection', ws, req);
     });
   }
 });
@@ -370,13 +392,15 @@ wss.on('connection', (ws, req) => {
 
       claude.addToContext(sessionId, segment);
 
-      // Also broadcast via Socket.IO if anyone is listening
+      // Broadcast transcript to ws/events + Socket.IO
+      broadcastEvent({ type: 'transcript_final', text, speaker: { id: role, role }, timestamp: segment.timestamp });
       io.to(sessionId).emit('transcription', segment);
 
       const hint = await claude.generateHintFromActiveInterview(sessionId, segment);
       if (hint) {
         console.log(`[Audio WS] Hint: ${hint.slice(0, 80)}`);
         ws.send(JSON.stringify({ type: 'hint', hint }));
+        broadcastEvent({ type: 'hint', hint, hint_type: 'llm', timestamp: new Date().toISOString() });
         io.to(sessionId).emit('hint', { hint, timestamp: new Date().toISOString() });
 
         // Send to Telegram

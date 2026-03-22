@@ -16,7 +16,7 @@
  *                              ERROR ──────────────────
  */
 
-const BACKEND_WS = 'ws://localhost:3001/ws/audio';
+const BACKEND_WS = 'ws://localhost:3000/ws/audio';
 
 // ── State machine ─────────────────────────────────────────────────────────────
 const STATE = {

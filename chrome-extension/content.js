@@ -585,7 +585,7 @@
   let eventsWs = null;
   let eventsWsRetryTimer = null;
   let eventsWsRetryCount = 0;
-  const EVENTS_WS_URL = 'ws://localhost:3001/ws/events';
+  const EVENTS_WS_URL = 'ws://localhost:3000/ws/events';
 
   function connectEventsWS() {
     if (eventsWs && (eventsWs.readyState === WebSocket.OPEN || eventsWs.readyState === WebSocket.CONNECTING)) return;
