@@ -370,13 +370,19 @@ function evaluateChecklist(goal, segments, _elapsedSec) {
 
 const EVALUATORS = {
   hard_skills: evaluateHardSkills,
+  assess_hard_skills_screening: evaluateHardSkills, // preset alias
+  assess_hard_skills_deep: evaluateHardSkills,       // preset alias
   soft_skills: evaluateSoftSkills,
+  assess_soft_skills: evaluateSoftSkills,             // preset alias
   competitor_research: evaluateCompetitorResearch,
+  competitor_intel: evaluateCompetitorResearch,       // preset alias
   time_saving: evaluateTimeSaving,
-  time_management: evaluateTimeSaving, // alias used by presets
+  time_management: evaluateTimeSaving,               // preset alias
   overemployment: evaluateOveremployment,
+  detect_red_flags: evaluateOveremployment,          // preset alias — same patterns
   show_competence: evaluateShowCompetence,
   checklist: evaluateChecklist,
+  collect_logistics: evaluateChecklist,              // preset alias — uses config.items
 };
 
 // ── Main entry point ──────────────────────────────────────────────────

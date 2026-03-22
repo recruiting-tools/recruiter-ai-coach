@@ -130,19 +130,16 @@ audio chunk (250ms WebM/Opus)
 
 ## Критические баги и блокеры (2026-03-22)
 
-### 1. Port mismatch — content.js ходит на несуществующий порт
-- `server.js` слушает на `:3000` (или `$PORT`)
-- `content.js` подключается к `ws://localhost:3001/ws/events` — **порт 3001 неправильный**
-- Нужно: исправить на `:3000` в content.js
+### ~~1. Port mismatch~~ — FIXED
+- Extension files (content.js, offscreen.js, background.js, manifest.json) обновлены на `:3000`
 
-### 2. `ws/events` endpoint не существует
-- `content.js` подключается к `ws://localhost:3000/ws/events` — но такого endpoint нет в `server.js`
-- Есть только `/ws/audio` (для аудио стрима от offscreen.js)
-- **Нужно**: добавить `/ws/events` endpoint в server.js для push-канала TranscriptEvent → content.js
-- Или: content.js может получать hints/keywords через background.js message passing (уже работает для audio flow)
+### ~~2. `ws/events` endpoint~~ — FIXED
+- `wssEvents` WebSocket server добавлен в server.js
+- `broadcastEvent()` отправляет transcript_final и hints на все подключённые ws/events клиенты
+- content.js подключается к `ws://localhost:3000/ws/events`
 
 ### 3. 15 goal types из пресетов без evaluator-а
-Пресеты (screening, deep_technical, etc.) используют эти goal types, но в `EVALUATORS` их нет:
+Пресеты (screening, deep_technical, etc.) используют эти goal types, но в `EVALUATORS` нет evaluator'ов:
 - `proper_opening`, `proper_closing` — структурные фразы начала/конца
 - `assess_hard_skills_screening`, `assess_hard_skills_deep` — отличаются от `hard_skills`
 - `assess_motivation`, `assess_problem_solving`, `assess_leadership`, `assess_communication`
@@ -152,7 +149,7 @@ audio chunk (250ms WebM/Opus)
 - `sell_the_role`, `pacing_control`, `capture_scorecard`
 - `build_rapport`, `understand_current_situation`, `candidate_experience`, `bias_mitigation`
 
-**Решение**: добавить evaluators или маппить через alias (как `time_management → evaluateTimeSaving`)
+**Решение**: эти цели уже попадают в system prompt GPT-4o через `buildGoalsSection()` — LLM учитывает их при генерации подсказок. Rule-based evaluator'ы добавлять по мере необходимости, начиная с `assess_hard_skills_*` как alias к `hard_skills`.
 
 ---
 
@@ -162,18 +159,19 @@ audio chunk (250ms WebM/Opus)
 - [x] Пресеты: применить screening/deep_technical/etc. к интервью
 - [x] Активация интервью → `GET /api/interviews/active`
 - [x] tabCapture → Deepgram → транскрипция с speaker mapping (recruiter/candidate)
-- [x] Goals engine: time_warning, hard_skills, soft_skills, competitor_research, overemployment, show_competence, checklist
+- [x] Goals engine: time_warning/time_management, hard_skills, soft_skills, competitor_research, overemployment, show_competence, checklist
 - [x] LLM hints: goals-aware + keywords-aware system prompt
 - [x] Overlay: sticky hints, транскрипт, keywords
 - [x] Dashboard LivePage: polling последних hints/segments
 - [x] Rate limiting: 20 сек throttle на LLM подсказки
+- [x] ws/events endpoint: push-канал transcript + hints → content.js
+- [x] Port alignment: extension → :3000
 
 ## Что НЕ работает (нужно чинить до демо)
 
-- [ ] **content.js → ws/events**: endpoint не существует, порт неправильный
 - [ ] **Popup "Attach Interview"**: нет UI для выбора интервью перед звонком
 - [ ] **Dashboard Interview List/Wizard**: только LivePage сделана, создание интервью — только через curl
-- [ ] **15 goal types без evaluator**: пресеты применяются но не оцениваются
+- [ ] **Goals engine evaluators**: 15 goal types из пресетов без rule-based evaluator'а (LLM их учитывает, но нет auto-check)
 
 ---
 
