@@ -5,3 +5,5 @@ node_modules/
 dist/
 .cache/
 backend/data/
+test-data/
+debug-audio.webm
