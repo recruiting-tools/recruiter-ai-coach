@@ -27,10 +27,24 @@
 
 ## В процессе / Следующее
 
-### Iteration 2 — Home + Interview List
+### Iteration 2 — Home + Interview Wizard с пресетами/методологиями
 - [ ] `GET /` → Home: список всех интервью (`GET /api/interviews`)
-- [ ] `GET /interviews/new` → Мастер создания (шаги: CV → JD → Goals → Keywords)
-- [ ] `GET /interviews/:id` → Детали: prep kit, keywords, goals, кнопка "Активировать"
+- [ ] `GET /interviews/new` → Мастер создания интервью (шаги ниже):
+  1. **CV + JD** — загрузка/вставка текста резюме и описания вакансии
+  2. **Пресет** — выбор пресета (Screening / Deep Technical / Culture Fit / Leadership / Full / Custom)
+     - Показать описание и рекомендуемое время
+     - При выборе — автозаполнение целей (`POST /api/interviews/:id/apply-preset`)
+  3. **Методология** — опциональный выбор (STAR / Behavioral / Situational / Topgrading / Competency-Based / Case)
+     - Краткое описание как влияет на подсказки
+     - `PUT /api/interviews/:id/methodology`
+  4. **Кастомизация целей** — список целей из пресета с чекбоксами:
+     - Можно отжать галку у любой цели
+     - Можно добавить произвольную цель текстом ("Спросить про опыт с Kafka")
+     - `PATCH /api/interviews/:id/goals/:goalId` для toggle
+     - `POST /api/interviews/:id/goals/custom` для кастомных целей
+  5. **Keywords** — авто-генерация из CV+JD (`POST /api/interviews/:id/generate-keywords`) + ручная правка
+  6. **Обзор + Старт** — итоговый экран: кандидат, вакансия, цели, методология → "Активировать"
+- [ ] `GET /interviews/:id` → Детали: prep kit, keywords, goals, методология, кнопка "Активировать"
 - [ ] Навигация: хедер с ссылками Home / Live
 
 ### Iteration 3 — Улучшения Live View

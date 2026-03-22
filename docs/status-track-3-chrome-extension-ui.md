@@ -56,7 +56,22 @@
 
 ## В процессе / Следующее
 
+### Пресет + Методология в Popup/Overlay
+
+- [ ] **Preset picker в popup** — перед началом звонка рекрутер выбирает пресет (Screening / Deep Technical / Culture Fit / Leadership / Full / Custom)
+  - Пресет заполняет список целей автоматически (через `POST /api/interviews/:id/apply-preset`)
+  - Показать краткое описание пресета и время
+- [ ] **Methodology picker в popup** — опциональный выбор методологии (STAR / Behavioral / Situational / Topgrading / Competency-Based / Case)
+  - Сохраняется через `PUT /api/interviews/:id/methodology`
+  - Влияет на стиль подсказок от Track 2
+- [ ] **Goals customization** — после выбора пресета показать список целей с чекбоксами:
+  - Рекрутер может отжать галку у любой цели
+  - Может добавить произвольную цель текстом (input + кнопка "Добавить")
+  - `PATCH /api/interviews/:id/goals/:goalId` для toggle, `POST .../goals/custom` для добавления
 - [ ] **Goals toggle в overlay** — клик на цель включает/выключает её в реальном времени (POST к API)
+
+### Остальные задачи
+
 - [ ] **Speaker labels**: рекрутер синий, кандидат зелёный в транскрипте (данные от Track 1 ГОТОВЫ: `speaker: { id, role: "recruiter"|"candidate", confidence }` — нужно реализовать UI)
 - [ ] **Popup "Attach Interview"** — dropdown со списком интервью из `GET /api/interviews`, выбор активного
 - [ ] **Auto-attach по Meet URL** — при старте захвата popup проверяет URL вкладки → находит интервью → подгружает goals + keywords
@@ -70,10 +85,15 @@
 ## UX важные решения
 
 - **Sticky hint зона**: `position: sticky; top: 0` внутри `#rac-body` — hint виден всегда при скролле
-- **Пресеты в popup**: выбор методологии (Screening / Deep Technical / Culture Fit / Leadership / Full) перед звонком
-- **Начало звонка**: отдельная подсказка "Договоритесь что перебивать — это норм" как универсальный старт
-- **Конкуренты**: мгновенно появляется подсказка при упоминании конкурента (competitor_research goal)
-- **Таймер**: если включён time_saving goal — таймер виден в overlay всегда
+- **Активные подсказки прилипают к верху** overlay, выполненные/устаревшие — отлипают вниз или скрываются
+- **Пресет + методология в popup**: двухшаговый выбор перед звонком:
+  1. Пресет (Screening / Deep Technical / Culture Fit / Leadership / Full) → заполняет цели
+  2. Методология (STAR / Behavioral / Situational / Topgrading...) → влияет на стиль подсказок
+  3. Кастомизация: отжать галку / добавить цель текстом
+- **Начало звонка**: отдельная подсказка "Договоритесь что перебивать — это норм" как универсальный старт (proper_opening goal)
+- **Конкуренты**: мгновенно появляется подсказка при упоминании конкурента (competitor_intel goal)
+- **Таймер**: если включён time_management goal — таймер виден в overlay всегда
+- **Подсказки зависят от методологии**: STAR → "Какой был результат?", Behavioral → "Дайте конкретный пример из прошлого"
 
 ---
 
