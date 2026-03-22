@@ -13,7 +13,7 @@
  *   node scripts/mock-tab-audio.js --session my-test-1      # custom sessionId
  *
  * What it does:
- *   1. Connects to ws://localhost:3001/ws/audio?sessionId=...
+ *   1. Connects to ws://localhost:3000/ws/audio?sessionId=...
  *   2. Sends binary audio chunks every 250ms (same as MediaRecorder timeslice)
  *   3. Receives and prints transcript/hint events from the backend
  *   4. Sends { type: 'stop' } on Ctrl+C
@@ -39,7 +39,7 @@ function getArg(flag) {
 }
 const hasFlag = (flag) => args.includes(flag);
 
-const WS_URL    = getArg('--url') || 'ws://localhost:3001/ws/audio';
+const WS_URL    = getArg('--url') || 'ws://localhost:3000/ws/audio';
 const AUDIO_FILE = getArg('--file') || null;
 const SESSION_ID = getArg('--session') || ('mock_' + Date.now());
 const LOOP       = hasFlag('--loop');

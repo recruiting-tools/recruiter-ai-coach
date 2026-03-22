@@ -83,7 +83,7 @@ const CAPTURE_THRESHOLDS = {
 // ── Mock contract — what mock-tab-audio.js must emit ─────────────────────────
 /**
  * A mock audio source MUST simulate:
- *   1. WebSocket connection to ws://localhost:3001/ws/audio?sessionId=...
+ *   1. WebSocket connection to ws://localhost:3000/ws/audio?sessionId=...
  *   2. Sending binary blobs (audio/webm;codecs=opus) every CHUNK_INTERVAL_MS
  *   3. Sending JSON { type: 'stop' } on close
  *

@@ -8,16 +8,19 @@
 ## Что сделано
 
 - [x] `chrome-extension/background.js` — tabCapture API, захват аудио вкладки Meet
-- [x] `chrome-extension/offscreen.js` — MediaRecorder → WebSocket → backend (ws://localhost:3001/ws/audio)
-- [x] `chrome-extension/audio-capture-contract.js` — типизированный контракт данных
+- [x] `chrome-extension/offscreen.js` — State machine (IDLE→STARTING→CAPTURING→STOPPING→ERROR), exponential WS backoff, silence detection, stats каждые 5s
+- [x] `chrome-extension/background.js` — Tab close/navigate detection, health ping каждые 10s, auto-stop при закрытии Meet вкладки
+- [x] `chrome-extension/audio-capture-contract.js` — типизированный контракт данных (states, events, thresholds, mock protocol)
+- [x] `chrome-extension/popup.js` — обработка capture_state events + backward compat с legacy status events
+- [x] `scripts/mock-tab-audio.js` — мок для тестирования Track 2 без Chrome (file/silence/loop режимы)
 - [x] `backend/src/deepgram-stream.js` — Deepgram nova-2, streaming транскрипция через WebSocket
 - [x] Базовое подключение работает: audio chunk → Deepgram → transcript
-- [x] `debug-audio.webm` тестировался (файл удалён, был debug артефакт)
 - [x] **Diarize**: `diarize: 'true'` в Deepgram params, `_extractSpeaker()` в deepgram-stream.js, `speaker: { id, confidence }` в TranscriptEvent
 - [x] **Speaker label в TranscriptEvent**: server.js прокидывает `speaker` в `transcript_final`/`transcript_interim` сообщения extension
-- [x] **GainNode fix**: offscreen.js теперь создаёт `MediaStreamDestination` и подключает gainNode к нему — MediaRecorder записывает усиленный (x2) поток, а не сырой
-- [x] **Speaker mapping**: в server.js — первый детектированный спикер = recruiter, остальные = candidate. TranscriptEvent теперь содержит `speaker: { id, role: "recruiter"|"candidate", confidence }`
-- [x] **`generateHintFromActiveInterview`**: server.js WebSocket audio handler и `/api/browser-segment` теперь используют goals-aware функцию — hints учитывают активное интервью, goals[], keywords[]
+- [x] **GainNode fix**: offscreen.js создаёт `MediaStreamDestination` — MediaRecorder записывает усиленный (x2) поток, НЕ подключён к destination (нет эха)
+- [x] **Speaker mapping**: в server.js — первый детектированный спикер = recruiter, остальные = candidate. `speaker: { id, role: "recruiter"|"candidate", confidence }`
+- [x] **`generateHintFromActiveInterview`**: server.js WebSocket audio handler и `/api/browser-segment` используют goals-aware функцию
+- [x] **Port fix**: все компоненты переведены на порт 3000 (было 3001)
 
 ---
 
@@ -55,7 +58,9 @@
 
 ## Заметки для других агентов
 
-- Аудио идёт через WebSocket: `ws://localhost:3001/ws/audio`
+- Аудио идёт через WebSocket: `ws://localhost:3000/ws/audio`
 - Формат: WebM/Opus chunks ~250ms
 - Deepgram API key: в `.env` как `DEEPGRAM_API_KEY`
-- Мок аудио для тестов: `scripts/mock-tab-audio.js`
+- Мок аудио для тестов: `node scripts/mock-tab-audio.js` (silence/file/loop)
+- **ws/events endpoint**: создан в server.js — `ws://localhost:3000/ws/events` broadcastит transcript/hint всем подключённым клиентам
+- **Порт**: 3000 (не 3001!), настроен через `PORT` env var
