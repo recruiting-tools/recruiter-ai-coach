@@ -73,3 +73,44 @@ PUT    /api/interviews/:id/goals                → { goals: Goal[] } → руч
 - Запуск: `cd backend && node src/server.js`
 - Тест API: `curl http://localhost:3001/api/interviews`
 - Seed: `node scripts/seed-mock-interviews.js`
+
+---
+
+## Как тестировать (E2E flow)
+
+```bash
+# 1. Запустить backend
+cd backend && node src/server.js
+
+# 2. Заполнить тестовые данные (2 кандидата, 1 вакансию, 1 интервью)
+node scripts/seed-mock-interviews.js
+
+# 3. Получить список интервью → запомнить ID
+curl http://localhost:3001/api/interviews | jq '.[0].id'
+
+# 4. Посмотреть доступные пресеты
+curl http://localhost:3001/api/presets | jq .
+
+# 5. Применить пресет (подставить ID из шага 3)
+curl -X POST http://localhost:3001/api/interviews/<ID>/apply-preset \
+  -H "Content-Type: application/json" \
+  -d '{"preset": "screening"}' | jq .
+
+# 6. Сгенерировать keywords из CV+JD (нужен OPENAI_API_KEY)
+curl -X POST http://localhost:3001/api/interviews/<ID>/generate-keywords | jq .keywords
+
+# 7. Активировать интервью
+curl -X POST http://localhost:3001/api/interviews/<ID>/activate | jq '{id, status, is_active}'
+
+# 8. Получить активное интервью (Extension использует этот endpoint)
+curl http://localhost:3001/api/interviews/active | jq '{id, candidate_name, job_title, goals: [.goals[].type], keywords}'
+
+# 9. Ручная правка целей — выключить одну цель
+curl -X PUT http://localhost:3001/api/interviews/<ID>/goals \
+  -H "Content-Type: application/json" \
+  -d '{"goals": [{"type":"assess_hard_skills_screening","enabled":true},{"type":"time_management","enabled":true,"config":{"max_min":30,"warn_min":23}}]}' | jq .goals
+```
+
+### Быстрый тест без OpenAI
+
+Шаги 1-5, 7-8 работают без API-ключа. Шаг 6 (generate-keywords) требует `OPENAI_API_KEY` в env.
