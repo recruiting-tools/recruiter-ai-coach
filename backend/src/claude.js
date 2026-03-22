@@ -1,7 +1,18 @@
 const OpenAI = require('openai');
 const db = require('./interview-config-db');
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Lazy-init: don't crash on import if OPENAI_API_KEY is missing
+let _client = null;
+function getClient() {
+  if (!_client) {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('[claude.js] OPENAI_API_KEY not set — LLM hints disabled');
+      return null;
+    }
+    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _client;
+}
 
 const SYSTEM_PROMPT = `Ты — AI-ассистент для рекрутера во время технического собеседования.
 Ты получаешь транскрипцию разговора в реальном времени и генерируешь краткие подсказки.
@@ -56,6 +67,7 @@ function setPrepContext(sessionId, prepContext) {
 }
 
 async function generateHint(sessionId, newSegment, { noThrottle = false } = {}) {
+  if (!getClient()) return null;
   const ctx = sessionContexts.get(sessionId);
   if (!ctx) return null;
 
@@ -80,7 +92,7 @@ ${recentText}
 Нужна ли рекрутеру подсказка прямо сейчас? Если да — напиши её. Если нет — пустую строку.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 200,
       messages: [
@@ -122,7 +134,7 @@ ${jobDescription}
 
 Отвечай кратко, по делу. Рекрутер — не технарь, но должен казаться компетентным.`;
 
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }],
@@ -227,6 +239,7 @@ function buildGoalsSection(goals) {
  * @returns {Promise<string|null>}
  */
 async function generateGoalsAwareHint(sessionId, segment, goals, { noThrottle = false, keywords = null } = {}) {
+  if (!getClient()) return null;
   // Ensure segment is in context
   addToContext(sessionId, segment);
   const ctx = sessionContexts.get(sessionId);
@@ -273,7 +286,7 @@ ${recentText}
 Нужна ли рекрутеру подсказка прямо сейчас? Учти активные цели интервью${activeGoals?.length ? '' : ' (целей нет — давай общие подсказки)'}. Если кандидат упоминает технологию — предложи умную фразу. Если нет важного — пустую строку.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 250,
       messages: [
@@ -325,7 +338,7 @@ ${jdText}
 ["React", "TypeScript", "Team Lead", "Docker", "PostgreSQL"]`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
@@ -368,7 +381,7 @@ ${jdSummary ? `Краткое описание вакансии: ${jdSummary}` :
 Отвечай на русском, просто и без технического жаргона. Рекрутер — не программист.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 300,
       messages: [{ role: 'user', content: prompt }],

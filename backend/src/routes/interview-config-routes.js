@@ -4,7 +4,15 @@ const OpenAI = require('openai');
 
 const db = require('../interview-config-db');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Lazy-init: don't crash on import if OPENAI_API_KEY is missing
+let _openai = null;
+function getOpenAI() {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 // ──────────────────────────────────────────────────
 // Candidates
@@ -211,7 +219,7 @@ ${raw_jd || '(не указано)'}
 Формат: ["keyword1", "keyword2", ...]
 Только JSON массив, без пояснений.`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 500,
       messages: [{ role: 'user', content: prompt }],

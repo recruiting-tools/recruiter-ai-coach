@@ -384,12 +384,27 @@
       try { chrome.runtime.sendMessage({ type: 'goal_toggle', goalId, checked }); } catch (e) {}
     });
 
-    window.__RAC_Goals.setGoals([
-      { id: 'hard_react',       label: 'React experience',   type: 'hard_skills' },
-      { id: 'hard_typescript',  label: 'TypeScript',         type: 'hard_skills' },
-      { id: 'hard_system_design', label: 'System Design',    type: 'hard_skills' },
-      { id: 'checklist_salary', label: 'Salary expectations', type: 'checklist' },
-    ]);
+    // Load goals from active interview via API
+    fetch('http://localhost:3000/api/interviews/active')
+      .then(r => r.ok ? r.json() : null)
+      .then(interview => {
+        if (!interview || !interview.goals) {
+          console.log('[RAC] No active interview — using empty goals');
+          return;
+        }
+        const goals = (typeof interview.goals === 'string' ? JSON.parse(interview.goals) : interview.goals)
+          .filter(g => g.enabled)
+          .map(g => ({
+            id: g.id || g.type,
+            label: g.label || g.custom_text || g.type.replace(/_/g, ' '),
+            type: g.type,
+          }));
+        console.log('[RAC] Loaded', goals.length, 'goals from active interview');
+        window.__RAC_Goals.setGoals(goals);
+      })
+      .catch(err => {
+        console.warn('[RAC] Could not load goals:', err.message);
+      });
   }
 
   // ── Sticky hint management ───────────────────────────────

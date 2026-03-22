@@ -403,8 +403,11 @@ function createPreset(type) {
   if (!preset) {
     throw new Error(`Unknown preset type: "${type}". Valid: ${Object.keys(PRESETS).join(', ')}`);
   }
-  // Return a deep copy to prevent mutation
-  return JSON.parse(JSON.stringify(preset));
+  // Return a deep copy with generated ids
+  return JSON.parse(JSON.stringify(preset)).map((goal, i) => ({
+    id: goal.id || `${type}_${goal.type}_${i}`,
+    ...goal,
+  }));
 }
 
 function listPresets() {
