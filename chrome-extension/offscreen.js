@@ -353,7 +353,10 @@ function stopCapture(reason = 'user_request') {
     ws = null;
   }
 
-  gainedStream = null;
+  if (gainedStream) {
+    gainedStream.getTracks().forEach((t) => t.stop());
+    gainedStream = null;
+  }
 
   if (audioCtx) {
     audioCtx.close().catch(() => {});
