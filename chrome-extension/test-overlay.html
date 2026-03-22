@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>RAC Overlay — Test Page (Mock Mode)</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1a1a2e;
+      min-height: 100vh;
+      font-family: sans-serif;
+      color: #ccc;
+      padding: 20px;
+    }
+    .page-hint {
+      max-width: 500px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    .page-hint h3 { margin: 0 0 8px; color: #a5b4fc; }
+    code { background: #111; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+  <div class="page-hint">
+    <h3>🧪 RAC Overlay — тестовая страница</h3>
+    <p>Имитирует Google Meet. Overlay запускается в mock-режиме — <code>window.__RAC_MOCK = true</code></p>
+    <p>Наблюдай: sticky hint сверху, keyword chips, goals checklist, таймер, транскрипт.</p>
+  </div>
+
+  <p style="color:#555; font-size:13px">
+    Это фон "страницы Meet". Overlay появится в правом верхнем углу.
+  </p>
+
+  <script>
+    // ── Mock chrome.runtime (minimal stub) ──────────────────
+    window.chrome = {
+      runtime: {
+        onMessage: {
+          addListener: function() {},
+          removeListener: function() {},
+        },
+        sendMessage: function() { return Promise.resolve(); },
+        lastError: null,
+      },
+    };
+
+    // ── Activate mock mode ──────────────────────────────────
+    window.__RAC_MOCK = true;
+  </script>
+
+  <!-- Load lib modules in correct order (same as manifest content_scripts) -->
+  <script src="lib/keyword-chips-renderer.js"></script>
+  <script src="lib/goals-checklist-renderer.js"></script>
+  <script src="mock-transcript-stream.js"></script>
+  <script src="content.js"></script>
+</body>
+</html>

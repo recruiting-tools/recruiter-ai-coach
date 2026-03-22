@@ -250,8 +250,8 @@ function evaluateCompetitorResearch(goal, segments, _elapsedSec) {
 
 function evaluateTimeSaving(goal, _segments, elapsedSec) {
   const hints = [];
-  const warnMin = goal.config?.warn_min || 35;
-  const maxMin = goal.config?.max_min || 45;
+  const warnMin = goal.config?.warn_at_min ?? goal.config?.warn_min ?? 35;
+  const maxMin = goal.config?.max_min ?? 45;
   const warnSec = warnMin * 60;
   const maxSec = maxMin * 60;
 
@@ -373,6 +373,7 @@ const EVALUATORS = {
   soft_skills: evaluateSoftSkills,
   competitor_research: evaluateCompetitorResearch,
   time_saving: evaluateTimeSaving,
+  time_management: evaluateTimeSaving, // alias used by presets
   overemployment: evaluateOveremployment,
   show_competence: evaluateShowCompetence,
   checklist: evaluateChecklist,

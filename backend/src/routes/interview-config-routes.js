@@ -156,6 +156,28 @@ router.post('/interviews/:id/activate', (req, res) => {
   }
 });
 
+// Apply goal preset to interview
+router.post('/interviews/:id/apply-preset', (req, res) => {
+  const { preset } = req.body;
+  if (!preset) return res.status(400).json({ error: 'preset is required' });
+
+  try {
+    const interview = db.getInterview(req.params.id);
+    if (!interview) return res.status(404).json({ error: 'Interview not found' });
+
+    const goals = db.createPreset(preset);
+    const updated = db.updateGoals(req.params.id, goals);
+    res.json({ preset, goals, interview: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// List available presets
+router.get('/presets', (req, res) => {
+  res.json(db.listPresets());
+});
+
 // Generate keywords from CV + JD using OpenAI
 router.post('/interviews/:id/generate-keywords', async (req, res) => {
   try {

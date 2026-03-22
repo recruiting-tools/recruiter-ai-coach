@@ -13,15 +13,18 @@
 - [x] `backend/src/deepgram-stream.js` — Deepgram nova-2, streaming транскрипция через WebSocket
 - [x] Базовое подключение работает: audio chunk → Deepgram → transcript
 - [x] `debug-audio.webm` тестировался (файл удалён, был debug артефакт)
+- [x] **Diarize**: `diarize: 'true'` в Deepgram params, `_extractSpeaker()` в deepgram-stream.js, `speaker: { id, confidence }` в TranscriptEvent
+- [x] **Speaker label в TranscriptEvent**: server.js прокидывает `speaker` в `transcript_final`/`transcript_interim` сообщения extension
+- [x] **GainNode fix**: offscreen.js теперь создаёт `MediaStreamDestination` и подключает gainNode к нему — MediaRecorder записывает усиленный (x2) поток, а не сырой
+- [x] **Speaker mapping**: в server.js — первый детектированный спикер = recruiter, остальные = candidate. TranscriptEvent теперь содержит `speaker: { id, role: "recruiter"|"candidate", confidence }`
+- [x] **`generateHintFromActiveInterview`**: server.js WebSocket audio handler и `/api/browser-segment` теперь используют goals-aware функцию — hints учитывают активное интервью, goals[], keywords[]
 
 ---
 
 ## В процессе / Следующее
 
-- [ ] **Speaker separation — вариант 1 (простой)**: добавить `diarize=true` в Deepgram params → получить speaker_0/speaker_1 labels бесплатно
-- [ ] **Audio gain**: добавить GainNode в offscreen.js — тихий звук от Meet усиливать
-- [ ] Добавить `speaker` поле в TranscriptEvent из Deepgram diarization output
-- [ ] Проверить: работает ли `diarize=true` с webm/opus потоком (иногда требует pcm/wav)
+- [ ] **Diarize + WebM/Opus**: проверить на реальном звонке — данные по совместимости в Открытых вопросах
+- [ ] **Vosk keyword spotter**: параллельный канал, PCM 16kHz → офлайн детект ключевых слов из CV/JD
 
 ---
 
@@ -39,7 +42,7 @@
 
 - Воск: нужна ли русская модель (vosk-model-ru) или small-en достаточно?
 - Нужен ли Audio Worklet для real-time PCM или ffmpeg pipe достаточно?
-- Есть ли проблема с `diarize=true` при streaming webm/opus через Deepgram?
+- **Diarize + WebM/Opus**: Deepgram поддерживает diarize со streaming WebM/Opus — параметр принимается без ошибок. Однако diarize на streaming может давать `speaker: null` для interim results и заполнять спикера только на final/speech_final сегментах. Рекомендация: читать `speaker` только из `isFinal=true` событий (что уже сделано в server.js через `lastSpeaker`). Полная верификация — при первом реальном звонке.
 
 ---
 

@@ -320,6 +320,102 @@ function saveKeywordHit(sessionId, keyword, confidence) {
 }
 
 // ──────────────────────────────────────────────────
+// Goal Presets
+// ──────────────────────────────────────────────────
+
+const PRESETS = {
+  screening: [
+    { type: 'proper_opening', enabled: true },
+    { type: 'assess_hard_skills_screening', enabled: true },
+    { type: 'assess_motivation', enabled: true },
+    { type: 'detect_red_flags', enabled: true, config: { watch: ['overemployment', 'job_hopping', 'contradictions'] } },
+    { type: 'collect_logistics', enabled: true, config: { items: ['salary_expectations', 'notice_period', 'work_format'] } },
+    { type: 'competitor_intel', enabled: true },
+    { type: 'sell_the_role', enabled: true },
+    { type: 'time_management', enabled: true, config: { max_min: 30, warn_min: 23 } },
+    { type: 'proper_closing', enabled: true },
+  ],
+
+  deep_technical: [
+    { type: 'proper_opening', enabled: true },
+    { type: 'assess_hard_skills_deep', enabled: true },
+    { type: 'assess_problem_solving', enabled: true },
+    { type: 'verify_resume', enabled: true },
+    { type: 'show_competence', enabled: true },
+    { type: 'pacing_control', enabled: true, config: { max_min_per_section: 15 } },
+    { type: 'capture_scorecard', enabled: true },
+    { type: 'time_management', enabled: true, config: { max_min: 60, warn_min: 50 } },
+    { type: 'proper_closing', enabled: true },
+  ],
+
+  culture_fit: [
+    { type: 'proper_opening', enabled: true },
+    { type: 'build_rapport', enabled: true },
+    { type: 'assess_cultural_fit', enabled: true },
+    { type: 'assess_soft_skills', enabled: true, config: { style: 'STAR' } },
+    { type: 'assess_motivation', enabled: true },
+    { type: 'sell_the_role', enabled: true },
+    { type: 'candidate_experience', enabled: true },
+    { type: 'bias_mitigation', enabled: true },
+    { type: 'time_management', enabled: true, config: { max_min: 45, warn_min: 35 } },
+    { type: 'proper_closing', enabled: true },
+  ],
+
+  leadership: [
+    { type: 'proper_opening', enabled: true },
+    { type: 'assess_leadership', enabled: true, config: { topics: ['delegation', 'conflict_resolution', 'decision_making', 'mentoring'] } },
+    { type: 'assess_soft_skills', enabled: true, config: { style: 'behavioral' } },
+    { type: 'assess_problem_solving', enabled: true },
+    { type: 'assess_motivation', enabled: true },
+    { type: 'verify_resume', enabled: true },
+    { type: 'capture_scorecard', enabled: true },
+    { type: 'time_management', enabled: true, config: { max_min: 60, warn_min: 50 } },
+    { type: 'proper_closing', enabled: true },
+  ],
+
+  full: [
+    { type: 'proper_opening', enabled: true },
+    { type: 'build_rapport', enabled: true },
+    { type: 'understand_current_situation', enabled: true },
+    { type: 'assess_hard_skills_deep', enabled: true },
+    { type: 'assess_problem_solving', enabled: true },
+    { type: 'assess_soft_skills', enabled: true, config: { style: 'STAR' } },
+    { type: 'assess_cultural_fit', enabled: true },
+    { type: 'assess_motivation', enabled: true },
+    { type: 'assess_leadership', enabled: true },
+    { type: 'assess_communication', enabled: true },
+    { type: 'verify_resume', enabled: true },
+    { type: 'detect_red_flags', enabled: true },
+    { type: 'competitor_intel', enabled: true },
+    { type: 'collect_logistics', enabled: true },
+    { type: 'sell_the_role', enabled: true },
+    { type: 'show_competence', enabled: true },
+    { type: 'candidate_experience', enabled: true },
+    { type: 'bias_mitigation', enabled: true },
+    { type: 'capture_scorecard', enabled: true },
+    { type: 'time_management', enabled: true, config: { max_min: 90, warn_min: 75 } },
+    { type: 'proper_closing', enabled: true },
+  ],
+};
+
+function createPreset(type) {
+  const preset = PRESETS[type];
+  if (!preset) {
+    throw new Error(`Unknown preset type: "${type}". Valid: ${Object.keys(PRESETS).join(', ')}`);
+  }
+  // Return a deep copy to prevent mutation
+  return JSON.parse(JSON.stringify(preset));
+}
+
+function listPresets() {
+  return Object.keys(PRESETS).map(type => ({
+    type,
+    goal_count: PRESETS[type].length,
+    goals: PRESETS[type].map(g => g.type),
+  }));
+}
+
+// ──────────────────────────────────────────────────
 // Exports
 // ──────────────────────────────────────────────────
 
@@ -353,4 +449,7 @@ module.exports = {
   saveHint,
   // Keywords
   saveKeywordHit,
+  // Presets
+  createPreset,
+  listPresets,
 };

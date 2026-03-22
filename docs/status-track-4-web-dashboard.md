@@ -7,33 +7,37 @@
 
 ## Что сделано
 
-- [ ] Ничего ещё не сделано — трек не начат
+### Iteration 1 — Scaffold + Live Page ✅ (2026-03-22)
+- [x] `dashboard/` — Vite + React (v19) + React Router v7, proxy `/api → http://localhost:3000`
+- [x] `GET /live` — страница live-view: мобильная, polling каждые 4 сек
+  - Последняя подсказка отображается крупно вверху (20px, зелёный блок)
+  - До 2 предыдущих подсказок — серым ниже
+  - Последние 5 реплик транскрипта с именем спикера
+  - Статус-бейдж: LIVE / connecting / нет сессии / ошибка
+- [x] Backend: `GET /api/sessions/current/live` → 3 последних hint + 5 сегментов из последней активной сессии
+- [x] Роутер: `*` → redirect на `/live`; структура готова для добавления новых страниц
+
+### Технические решения
+- Vite proxy к `:3000` (сервер слушает на `PORT || 3000`, не 3001!)
+- React Router v7 через `BrowserRouter` в `main.jsx`
+- Polling через `setInterval` в `useEffect`, cleanup при размонтировании
+- Endpoint `/api/sessions/current/live` берёт последнюю сессию из `sessions` Map (не требует знать sessionId)
 
 ---
 
 ## В процессе / Следующее
 
-### Iteration 1 — Скелет
-- [ ] Инициализация: `dashboard/` — Vite + React + React Router
-- [ ] `GET /dashboard` → Home: список интервью, кнопка "+ Новое"
-- [ ] `GET /dashboard/interviews/new` → Мастер создания (шаги: CV → JD → Goals → Keywords)
-- [ ] `GET /dashboard/interviews/:id` → Детали: prep kit, keywords, goals, кнопка "Активировать"
-- [ ] Подключение к backend REST API (`http://localhost:3001/api/*`)
+### Iteration 2 — Home + Interview List
+- [ ] `GET /` → Home: список всех интервью (`GET /api/interviews`)
+- [ ] `GET /interviews/new` → Мастер создания (шаги: CV → JD → Goals → Keywords)
+- [ ] `GET /interviews/:id` → Детали: prep kit, keywords, goals, кнопка "Активировать"
+- [ ] Навигация: хедер с ссылками Home / Live
 
-### Iteration 2 — Подготовка
-- [ ] **Goals wizard**: выбор пресета (Screening / Deep Technical / Culture Fit / Leadership / Full) → или ручная сборка целей из каталога
-- [ ] **Keywords**: отображение сгенерированных ключевых слов, возможность добавить/убрать вручную
-- [ ] **Prep kit**: структурированный вывод от GPT-4o: вопросы по секциям, на что обратить внимание
-- [ ] **Привязка Meet URL**: поле для ввода или автодетект
-
-### Iteration 3 — Live & Mobile
-- [ ] **Live страница** `GET /dashboard/sessions/current` — streaming подсказок во время звонка (для второго экрана или телефона)
-  - Поллинг каждые 5 сек: `GET /api/sessions/current/live`
-  - Последняя подсказка наверху крупно
-  - Транскрипт последних 5 реплик
-- [ ] **Post-call review** `GET /dashboard/sessions/:id` — полный транскрипт, timeline hints, статистика
-- [ ] **Mobile responsive** — адаптивная верстка для телефона
-- [ ] **Export** сессии в JSON/PDF
+### Iteration 3 — Улучшения Live View
+- [ ] WebSocket режим вместо polling (Socket.IO или raw WS)
+- [ ] Post-call страница `GET /sessions/:id` — полный транскрипт, timeline
+- [ ] Счётчик времени сессии в хедере
+- [ ] Auto-scroll транскрипта при новых репликах
 
 ---
 
@@ -41,6 +45,7 @@
 
 - Dashboard открывается на отдельной вкладке или мониторе
 - Mobile live view = второй экран рекрутера (телефон рядом с ноутбуком)
+- Тёмная тема — оптимально для разных условий освещения
 - Prep kit читается за 5-10 мин перед звонком
 - Ссылка на dashboard доступна из popup Extension одной кнопкой
 
@@ -48,24 +53,36 @@
 
 ## Открытые вопросы
 
-- Нужен ли mobile web view прямо сейчас или это Iteration 3+?
-- Аутентификация: пока без auth (localhost), или добавить simple token?
+- Аутентификация: пока без auth (localhost), добавить simple token позже
 - Деплой: backend на Railway + dashboard как static на Netlify/Vercel?
-- Стек UI: plain React или добавить TailwindCSS?
+- Переход на WebSocket вместо polling — когда это станет приоритетом?
+- Добавить тост-уведомление при появлении новой подсказки?
 
 ---
 
 ## Зависимости
 
-- Track 0: все REST API (`/api/candidates`, `/api/jobs`, `/api/interviews`) должны работать
-- Track 2: `GET /api/sessions/current/live` для live поллинга
-- Track 1/2: WebSocket для real-time режима (если делаем WS вместо поллинга)
+- Track 0: все REST API (`/api/candidates`, `/api/jobs`, `/api/interviews`) должны работать — нужно для Iteration 2
+- Track 2: `GET /api/sessions/current/live` — добавлен в backend/src/server.js, работает с существующим `hintsBuffer`
+- Track 1/2: WebSocket для real-time режима (Iteration 3)
+
+---
+
+## Как запустить
+
+```bash
+cd dashboard
+npm run dev     # http://localhost:5173/live
+```
+
+Backend должен быть запущен на `:3000`:
+```bash
+cd backend && node src/server.js
+```
 
 ---
 
 ## Заметки для других агентов
 
-- Dashboard пока не существует — начинать с нуля
-- Backend уже serve'ит `/api/*` — dashboard будет на том же порту через `/dashboard`
-- Или отдельный dev server Vite на :5173 с proxy к :3001
-- Не трогать `backend/src/` — это территория Track 0/1/2
+- **Track 2**: endpoint `/api/sessions/current/live` добавлен в `backend/src/server.js` (перед `/api/session/:sessionId/hints`). Возвращает последние 3 hint + 5 segments из последней активной сессии. Если `sessions` пустой — 404.
+- Dashboard на dev-сервере `:5173`, proxy → `:3000`. В production — собрать `npm run build` и serve static.

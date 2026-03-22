@@ -11,24 +11,51 @@
 - [x] `backend/src/routes/interview-config-routes.js` — REST CRUD: POST/GET candidates, jobs, interviews; PUT goals; POST bind-meet; GET by-meet-url
 - [x] `scripts/seed-mock-interviews.js` — сид с тестовыми данными (2 кандидата, 1 вакансия, 1 интервью)
 - [x] Подключено в `server.js`: `app.use('/api', interviewConfigRoutes)`
+- [x] `POST /api/interviews/:id/generate-keywords` — CV+JD → GPT-4o → keywords[], сохраняет в БД
+- [x] `POST /api/interviews/:id/activate` — сделать интервью активным (deactivates others)
+- [x] `GET /api/interviews/active` — текущее активное интервью (для Extension)
+- [x] `setActiveInterview` и `getActiveInterview` — в db.js
+- [x] `createPreset(type)` factory в `interview-config-db.js` — 5 пресетов: screening, deep_technical, culture_fit, leadership, full
+- [x] `POST /api/interviews/:id/apply-preset` — применить пресет к интервью
+- [x] `GET /api/presets` — список доступных пресетов с goal_count
 
 ---
 
 ## В процессе / Следующее
 
-- [ ] `POST /api/interviews/:id/generate-keywords` — CV+JD → GPT-4o → keywords[] (нужно подключить к claude.js)
-- [ ] `POST /api/interviews/:id/activate` — сделать интервью активным для следующего звонка
-- [ ] `GET /api/interviews/active` — получить текущее активное интервью (нужен Extension)
 - [ ] Auto-bind: проверить что `GET /api/interviews/by-meet-url?url=...` работает из extension
-- [ ] Пресеты целей (Screening, Deep Technical, Culture Fit, Leadership, Full) — factory в db.js
+- [ ] E2E тест: seed → apply-preset → generate-keywords → activate → GET active
+- [ ] Dashboard wizard: Track 4 будет использовать эти API для setup-flow
 
 ---
 
 ## Открытые вопросы
 
-- **Пресеты**: отдельный `POST /api/interviews/:id/apply-preset` или через `PUT goals` с preset_name?
 - **SQLite migrations**: создаётся при старте — нужны ли версионированные миграции?
 - **Goals runtime state**: `addressed`/`addressed_at` хранить в interviews.goals JSON или отдельная таблица?
+- **Preset + custom goals**: нужен ли endpoint для toggle отдельной цели (без перезаписи всех goals)?
+
+---
+
+## API Summary (для других треков)
+
+```
+GET    /api/presets                              → список пресетов
+POST   /api/interviews/:id/apply-preset         → { preset: "screening" } → Goal[]
+POST   /api/interviews/:id/generate-keywords    → keywords[] из CV+JD через GPT-4o
+POST   /api/interviews/:id/activate             → делает активным
+GET    /api/interviews/active                   → InterviewConfig с goals[] и keywords[]
+PUT    /api/interviews/:id/goals                → { goals: Goal[] } → ручная правка целей
+```
+
+### Preset types
+| Type | Goals |
+|------|-------|
+| `screening` | proper_opening, assess_hard_skills_screening, assess_motivation, detect_red_flags, collect_logistics, competitor_intel, sell_the_role, time_management(30min), proper_closing |
+| `deep_technical` | proper_opening, assess_hard_skills_deep, assess_problem_solving, verify_resume, show_competence, pacing_control, capture_scorecard, time_management(60min), proper_closing |
+| `culture_fit` | proper_opening, build_rapport, assess_cultural_fit, assess_soft_skills(STAR), assess_motivation, sell_the_role, candidate_experience, bias_mitigation, time_management(45min), proper_closing |
+| `leadership` | proper_opening, assess_leadership, assess_soft_skills(behavioral), assess_problem_solving, assess_motivation, verify_resume, capture_scorecard, time_management(60min), proper_closing |
+| `full` | Все цели (21 goal, 90min) |
 
 ---
 

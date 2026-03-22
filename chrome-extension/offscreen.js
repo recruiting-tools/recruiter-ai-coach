@@ -32,6 +32,7 @@ let state = STATE.IDLE;
 // ── Runtime handles ───────────────────────────────────────────────────────────
 let sessionId    = null;
 let stream       = null;
+let gainedStream = null;  // amplified MediaStream from AudioContext gain node
 let audioCtx     = null;
 let mediaRecorder = null;
 let ws           = null;
@@ -164,11 +165,13 @@ async function startCapture(streamId, sid) {
   analyser.fftSize = 256;
   const levelData = new Uint8Array(analyser.frequencyBinCount);
 
-  // Route: source → gain → destination (playback)
+  // Route: source → gain → analyser (level meter) + gainDest (recording)
+  // NOTE: gainNode intentionally NOT connected to audioCtx.destination — no playback/echo
+  const gainDest = audioCtx.createMediaStreamDestination();
   source.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  // Route: gain → analyser (level meter reads amplified signal)
   gainNode.connect(analyser);
+  gainNode.connect(gainDest);
+  gainedStream = gainDest.stream; // MediaRecorder uses this — gets amplified audio
 
   // 3. Level monitor + silence detection
   levelIntervalId = setInterval(() => {
@@ -257,7 +260,7 @@ function connectWebSocket() {
       mediaRecorder.stop();
     }
 
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    mediaRecorder = new MediaRecorder(gainedStream || stream, { mimeType: 'audio/webm;codecs=opus' });
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size === 0) return;
@@ -349,6 +352,8 @@ function stopCapture(reason = 'user_request') {
     ws.close();
     ws = null;
   }
+
+  gainedStream = null;
 
   if (audioCtx) {
     audioCtx.close().catch(() => {});

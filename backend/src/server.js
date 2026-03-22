@@ -142,7 +142,7 @@ app.post('/api/browser-segment', async (req, res) => {
   const segment = { chunkId: `browser_${Date.now()}`, text, speaker: speaker || 'Speaker', timestamp: new Date().toISOString() };
   claude.addToContext(sessionId, segment);
 
-  const hint = await claude.generateHint(sessionId, segment);
+  const hint = await claude.generateHintFromActiveInterview(sessionId, segment);
 
   // Отправить в Telegram тоже
   if (hint) {
@@ -176,6 +176,22 @@ app.post('/api/prepare', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Live view для Web Dashboard — последние 3 подсказки + 5 сегментов транскрипта
+app.get('/api/sessions/current/live', (req, res) => {
+  if (sessions.size === 0) {
+    return res.status(404).json({ error: 'No active session' });
+  }
+  // Берём последнюю добавленную сессию
+  let session;
+  for (const s of sessions.values()) session = s;
+
+  res.json({
+    hints: (session.hintsBuffer || []).slice(-3),
+    segments: (session.segmentsBuffer || []).slice(-5),
+    sessionId: session.transcriptId || null,
+  });
 });
 
 // Polling endpoint для Chrome Extension (hints + segments since timestamp)
@@ -307,17 +323,24 @@ wss.on('connection', (ws, req) => {
   let finalBuffer = '';
   let segmentCount = 0;
 
-  let lastSpeaker = null; // track speaker across fragments
+  let lastSpeaker = null;    // latest diarization result
+  let firstSpeakerId = null; // first detected speaker → recruiter
+
+  // Map Deepgram speaker id → role. First detected speaker = recruiter.
+  function resolveRole(spk) {
+    if (!spk) return 'unknown';
+    if (firstSpeakerId === null) firstSpeakerId = spk.id;
+    return spk.id === firstSpeakerId ? 'recruiter' : 'candidate';
+  }
 
   dg.onTranscript = async ({ transcript, isFinal, speechFinal, speaker }) => {
-    // Track the latest speaker info from diarization
     if (speaker) lastSpeaker = speaker;
 
     // Send transcript to Chrome Extension (with speaker info)
     ws.send(JSON.stringify({
       type: isFinal ? 'transcript_final' : 'transcript_interim',
       text: transcript,
-      speaker: speaker || null,
+      speaker: speaker ? { id: speaker.id, role: resolveRole(speaker), confidence: speaker.confidence } : null,
       isFinal,
       speechFinal,
     }));
@@ -332,27 +355,25 @@ wss.on('connection', (ws, req) => {
       finalBuffer = '';
       segmentCount++;
 
-      // Use lastSpeaker to label the segment
-      const speakerLabel = lastSpeaker ? `Speaker ${lastSpeaker.id}` : 'Auto';
-
+      const role = resolveRole(lastSpeaker);
       const segment = {
         chunkId: `dg_${Date.now()}`,
         text,
-        speaker: speakerLabel,
+        speaker: role,
         speakerInfo: lastSpeaker || null,
         timestamp: new Date().toISOString(),
       };
 
       lastSpeaker = null; // reset after consuming
 
-      console.log(`[Audio WS] Segment #${segmentCount}: "${text.slice(0, 80)}..."`);
+      console.log(`[Audio WS] Segment #${segmentCount} [${role}]: "${text.slice(0, 80)}"`);
 
       claude.addToContext(sessionId, segment);
 
       // Also broadcast via Socket.IO if anyone is listening
       io.to(sessionId).emit('transcription', segment);
 
-      const hint = await claude.generateHint(sessionId, segment);
+      const hint = await claude.generateHintFromActiveInterview(sessionId, segment);
       if (hint) {
         console.log(`[Audio WS] Hint: ${hint.slice(0, 80)}`);
         ws.send(JSON.stringify({ type: 'hint', hint }));
