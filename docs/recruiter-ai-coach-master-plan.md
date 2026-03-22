@@ -81,35 +81,105 @@ Web Dashboard (Vite + React 19)
 
 ## Goals System (ключевая фича)
 
-Рекрутер выбирает **методологию или пресет** перед звонком, или собирает цели вручную.
+### UX Flow: от пресета к подсказкам
 
-### Пресеты
-| Пресет | Цели |
-|--------|------|
-| **Screening** | Hard skills (surface) + Red flags + Time control (30 min) |
-| **Deep Technical** | Hard skills (deep) + Problem solving + Verify resume |
-| **Culture Fit** | Soft skills + Cultural fit + Motivation |
-| **Leadership** | Leadership + Soft skills + Behavioral |
-| **Full** | Всё включено |
+```
+Шаг 1: Выбор пресета и/или методологии
+┌─────────────────────────────────────────────────────┐
+│  Пресет (ЧТО оценивать)    Методология (КАК)       │
+│  ○ Screening (30 мин)      ○ STAR                   │
+│  ● Deep Technical (60 мин) ● Behavioral             │
+│  ○ Culture Fit (45 мин)    ○ Situational             │
+│  ○ Leadership (60 мин)     ○ Topgrading              │
+│  ○ Full (90 мин)           ○ Competency-Based        │
+│  ○ Custom (собрать вручную)○ Case Interview           │
+└─────────────────────────────────────────────────────┘
+        ↓
+Шаг 2: Кастомизация целей
+┌─────────────────────────────────────────────────────┐
+│  ☑ assess_hard_skills_deep     ← из пресета         │
+│  ☑ assess_problem_solving      ← из пресета         │
+│  ☑ verify_resume               ← из пресета         │
+│  ☐ detect_red_flags            ← отжал галку        │
+│  ☑ competitor_intel            ← добавил сам        │
+│  ☑ time_management (60 мин)    ← из пресета         │
+│  ┌──────────────────────────────────────┐            │
+│  │ + Добавить цель текстом...          │            │
+│  │   "Спросить про опыт с Kafka"       │            │
+│  └──────────────────────────────────────┘            │
+└─────────────────────────────────────────────────────┘
+        ↓
+Шаг 3: Во время звонка → подсказки с учётом целей + методологии
+```
 
-### Отдельные цели (можно включать/выключать в процессе)
+**Пресет** определяет КАКИЕ цели включены (что оценивать).
+**Методология** определяет КАК коучить рекрутера (формат вопросов, подсказок).
+Можно выбрать оба, один, или собрать цели вручную.
+
+### Пресеты (что оценивать)
+
+| Пресет | Цели | Время |
+|--------|------|-------|
+| **Screening** | Hard skills (surface) + Motivation + Red flags + Logistics + Sell role | 30 мин |
+| **Deep Technical** | Hard skills (deep) + Problem solving + Verify resume + Scorecard | 60 мин |
+| **Culture Fit** | Soft skills (STAR) + Cultural fit + Motivation + Rapport + Bias check | 45 мин |
+| **Leadership** | Leadership + Soft skills (behavioral) + Problem solving + Scorecard | 60 мин |
+| **Full** | Все 21 цель | 90 мин |
+
+### Методологии (как коучить)
+
+| Методология | Суть | Как влияет на подсказки |
+|-------------|------|------------------------|
+| **STAR** | Situation → Task → Action → Result | Подсказки: "Попроси конкретный пример", "Какой был результат?" |
+| **Behavioral** | Прошлый опыт предсказывает будущее | Подсказки: "Расскажите о ситуации когда...", "Дайте пример..." |
+| **Situational** | Гипотетические сценарии | Подсказки: "Что бы вы сделали если...", "Как бы вы поступили..." |
+| **Topgrading** | Хронологический разбор каждой позиции | Подсказки: "Что вас наняли делать?", "Что скажет ваш руководитель?" |
+| **Competency-Based** | Вопросы по компетенциям с рубрикой | Подсказки: оценочные якоря после каждого ответа |
+| **Case Interview** | Бизнес/технический кейс | Подсказки: "Задал ли уточняющие вопросы?", "Рассмотрел альтернативы?" |
+
+Полный каталог целей и методологий: [`docs/interview-goals-comprehensive-catalog.md`](interview-goals-comprehensive-catalog.md)
+
+### Цели (можно включать/выключать в процессе)
+
+**Assessment (что оценивать):**
 - `assess_hard_skills_deep` / `assess_hard_skills_screening`
-- `assess_soft_skills` (STAR / behavioral)
+- `assess_soft_skills` (STAR / behavioral / situational)
 - `assess_cultural_fit`
 - `assess_motivation`
 - `assess_leadership`
+- `assess_problem_solving`
+- `assess_communication`
 - `verify_resume`
 - `detect_red_flags` (overemployment, contradictions, job-hopping)
-- `competitor_research` — мгновенный триггер при упоминании конкурентов
-- `time_saving` — таймер + предупреждения "осталось 10 мин"
+
+**Process (как вести):**
+- `time_management` — таймер + предупреждения "осталось 10 мин"
+- `pacing_control` — не застревать на одной теме
+- `proper_opening` / `proper_closing` — структура начала/конца
+- `structured_format` — следовать плану интервью
+- `capture_scorecard` — оценки по секциям
+
+**Relationship (впечатление):**
 - `show_competence` — фразочки показывающие что рекрутер шарит
-- `checklist` — произвольные пункты
+- `sell_the_role` — продать позицию кандидату
+- `build_rapport` — установить контакт
+- `candidate_experience` — позитивный опыт кандидата
+
+**Information gathering:**
+- `collect_logistics` — зарплата, notice period, формат работы
+- `competitor_intel` — мгновенный триггер при упоминании конкурентов
+- `understand_current_situation` — текущая роль, причины ухода
+
+**Custom:**
+- Произвольный текст — "Спросить про опыт с Kafka", "Уточнить gap в резюме 2023-2024"
 
 ### UX целей в overlay
+
 - Активные подсказки **прилипают к верху** overlay
-- Выполненные / устаревшие цели **отлипают** вниз или скрываются
+- Выполненные / устаревшие подсказки **отлипают** вниз или скрываются
 - Рекрутер может включить/выключить любую цель в реальном времени кликом
 - Контроль интервью: "договориться что перебивать — это норм" → универсальные фразы в начале
+- Подсказки зависят от выбранной методологии: STAR → "Какой был результат?", Behavioral → "Дайте конкретный пример"
 
 ---
 

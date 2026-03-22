@@ -41,36 +41,57 @@ interface InterviewConfig {
     jd_summary?: string   // generated
   }
   meet_url?: string        // привязка к Google Meet
+  preset?: PresetType      // выбранный пресет (если есть)
+  methodology?: Methodology // выбранная методология (если есть)
   goals: Goal[]
   keywords: string[]       // generated from CV+JD
   language: 'ru' | 'en' | 'ar'
   created_at: number
 }
 
+type PresetType = 'screening' | 'deep_technical' | 'culture_fit' | 'leadership' | 'full'
+
+// Методология определяет КАК коучить (формат вопросов/подсказок)
+type Methodology = 'star' | 'behavioral' | 'situational' | 'topgrading' | 'competency_based' | 'case_interview'
+
 interface Goal {
   id: string
-  type: 'hard_skills' | 'soft_skills' | 'competitor_research' |
-        'time_saving' | 'overemployment' | 'show_competence' | 'checklist'
+  type: string            // один из ~30 типов из каталога (assess_hard_skills_deep, time_management, etc.)
+  label?: string          // human-readable название (авто или custom)
   enabled: boolean
-  depth?: 'shallow' | 'medium' | 'deep'
   config: Record<string, any>
+  custom_text?: string    // если пользователь добавил цель текстом
   // runtime:
   addressed?: boolean      // галка поставлена (вручную или автоматом)
   addressed_at?: number
 }
 ```
 
-**Goal types:**
+**Goal types (основные, полный каталог в `docs/interview-goals-comprehensive-catalog.md`):**
 
 | type | description | config | runtime behavior |
 |------|-------------|--------|-----------------|
-| `hard_skills` | Проверка тех. навыков | `{ topics: string[], depth }` | Подсказки "не спросили про X" |
-| `soft_skills` | Поведенческие вопросы | `{ style: 'STAR' \| 'behavioral' \| 'situational' }` | Подсказки про формат вопросов |
-| `competitor_research` | Упоминания конкурентов | `{ competitors: string[] }` | Мгновенный триггер при упоминании |
-| `time_saving` | Контроль времени | `{ max_min: 45, warn_min: 35 }` | Таймер + подсказки "пора завершать" |
-| `overemployment` | Детект параллельной работы | `{}` | Флаг при упоминании другого работодателя |
+| `assess_hard_skills_deep` | Глубокая проверка тех. навыков | `{ topics: string[] }` | Подсказки "не спросили про X", follow-up |
+| `assess_hard_skills_screening` | Поверхностная проверка стека | `{ topics: string[], max_min_per_topic: 3 }` | Флаг если углубляется слишком |
+| `assess_soft_skills` | Поведенческие вопросы | `{ style: 'STAR' \| 'behavioral' \| 'situational' }` | Подсказки про формат вопросов |
+| `assess_motivation` | Мотивация и намерения | `{ role_offers: string[] }` | Детект мисматча мотивация↔роль |
+| `assess_leadership` | Лидерские качества | `{ topics: string[] }` | Подсказки про делегирование, конфликты |
+| `assess_cultural_fit` | Культурное соответствие | `{ values: string[] }` | Напоминание если культура не обсуждалась |
+| `verify_resume` | Проверка заявлений из CV | `{ claims_to_verify: string[] }` | Вопросы-ловушки по CV |
+| `detect_red_flags` | Red flags | `{ watch: string[] }` | Overemployment, job-hopping, противоречия |
+| `competitor_intel` | Упоминания конкурентов | `{ competitors: string[] }` | Мгновенный триггер при упоминании |
+| `time_management` | Контроль времени | `{ max_min: 45, warn_min: 35 }` | Таймер + подсказки "пора завершать" |
 | `show_competence` | Демонстрация компетентности | `{ topics: string[] }` | Фразочки показывающие что рекрутер шарит |
-| `checklist` | Произвольные пункты | `{ items: string[] }` | Ручные галки + напоминания |
+| `collect_logistics` | Зарплата, notice period, etc. | `{ items: string[] }` | Напоминание если не спросили |
+| `sell_the_role` | Продать позицию кандидату | `{ selling_points: string[] }` | Напоминание вставить selling point |
+| `proper_opening` / `proper_closing` | Структура начала/конца | `{ checklist: string[] }` | Чеклист при начале/конце звонка |
+| `custom` | Произвольный текст от пользователя | `{ text: string }` | LLM учитывает в подсказках |
+
+**Методология** инжектируется в system prompt GPT-4o и влияет на стиль подсказок:
+- `star` → подсказки вида "Попроси конкретный пример (Situation → Task → Action → Result)"
+- `behavioral` → "Расскажите о ситуации когда...", "Дайте пример из прошлого опыта"
+- `topgrading` → "Что вас наняли делать?", "Что бы сказал ваш руководитель?"
+- и т.д. (полный список в каталоге)
 
 ### Contract 2: AudioFrame (Track 1 → Track 2)
 

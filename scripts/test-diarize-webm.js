@@ -18,9 +18,10 @@
  *   - DEEPGRAM_API_KEY in .env
  */
 
-const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
+// ws lives in backend/node_modules — resolve from there
+const WebSocket = require(path.join(__dirname, '../backend/node_modules/ws'));
 
 const FILE = process.argv[2] || path.join(__dirname, '../test-data/diarize-test-2min.webm');
 const WS_URL = process.env.WS_URL || 'ws://localhost:3001/ws/audio?sessionId=diarize_test';
