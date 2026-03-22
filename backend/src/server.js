@@ -10,6 +10,8 @@ const fireflies = require('./fireflies');
 const claude = require('./claude');
 const { initBot } = require('./telegram');
 const DeepgramStream = require('./deepgram-stream');
+const { evaluateGoals } = require('./interview-goals-engine');
+const db = require('./interview-config-db');
 const interviewConfigRoutes = require('./routes/interview-config-routes');
 
 const app = express();
@@ -348,6 +350,12 @@ wss.on('connection', (ws, req) => {
   let lastSpeaker = null;    // latest diarization result
   let firstSpeakerId = null; // first detected speaker → recruiter
 
+  // Goals engine state for this session
+  const sessionStartedAt = Date.now();
+  let goalsCache = null;     // loaded on first segment
+  let recentSegments = [];   // rolling window for goals evaluation
+  let lastGoalsEvalAt = 0;   // throttle: evaluate at most every 10s
+
   // Map Deepgram speaker id → role. First detected speaker = recruiter.
   function resolveRole(spk) {
     if (!spk) return 'unknown';
@@ -396,16 +404,72 @@ wss.on('connection', (ws, req) => {
       broadcastEvent({ type: 'transcript_final', text, speaker: { id: role, role }, timestamp: segment.timestamp });
       io.to(sessionId).emit('transcription', segment);
 
+      // ── LLM hint (throttled to 20s in claude.js) ──
       const hint = await claude.generateHintFromActiveInterview(sessionId, segment);
       if (hint) {
         console.log(`[Audio WS] Hint: ${hint.slice(0, 80)}`);
-        ws.send(JSON.stringify({ type: 'hint', hint }));
+        ws.send(JSON.stringify({ type: 'hint', hint, hint_type: 'llm' }));
         broadcastEvent({ type: 'hint', hint, hint_type: 'llm', timestamp: new Date().toISOString() });
-        io.to(sessionId).emit('hint', { hint, timestamp: new Date().toISOString() });
+        io.to(sessionId).emit('hint', { hint, hint_type: 'llm', timestamp: new Date().toISOString() });
+
+        // Buffer for live view polling
+        const sess = sessions.get(sessionId);
+        if (sess) {
+          sess.hintsBuffer = sess.hintsBuffer || [];
+          sess.hintsBuffer.push({ hint, hint_type: 'llm', timestamp: new Date().toISOString() });
+          if (sess.hintsBuffer.length > 20) sess.hintsBuffer.shift();
+        }
 
         // Send to Telegram
         const { sendHint } = require('./telegram');
         sendHint(process.env.TELEGRAM_CHAT_ID, hint).catch(() => {});
+      }
+
+      // ── Rule-based goals engine (evaluate every 10s) ──
+      recentSegments.push(segment);
+      if (recentSegments.length > 30) recentSegments = recentSegments.slice(-20);
+
+      const now = Date.now();
+      if (now - lastGoalsEvalAt >= 10000) {
+        lastGoalsEvalAt = now;
+
+        // Lazy-load goals from active interview
+        if (!goalsCache) {
+          try {
+            const active = db.getActiveInterview();
+            if (active && active.goals) {
+              goalsCache = typeof active.goals === 'string' ? JSON.parse(active.goals) : active.goals;
+            }
+          } catch (e) { console.warn('[GoalsEngine] Failed to load goals:', e.message); }
+        }
+
+        if (goalsCache && goalsCache.length > 0) {
+          const elapsedSec = Math.floor((now - sessionStartedAt) / 1000);
+          const goalHints = evaluateGoals(goalsCache, recentSegments, elapsedSec);
+
+          if (goalHints) {
+            for (const gh of goalHints) {
+              console.log(`[GoalsEngine] ${gh.type}: ${gh.hint.slice(0, 60)}`);
+              ws.send(JSON.stringify({ type: 'hint', hint: gh.hint, hint_type: gh.type }));
+              broadcastEvent({ type: 'hint', hint: gh.hint, hint_type: gh.type, goalId: gh.goalId, timestamp: new Date().toISOString() });
+
+              // Broadcast goal_update if goal was auto-addressed
+              if (gh.goalId) {
+                const goal = goalsCache.find(g => g.id === gh.goalId);
+                if (goal && goal.addressed) {
+                  broadcastEvent({ type: 'goal_update', goalId: gh.goalId, addressed: true });
+                }
+              }
+            }
+
+            // Also broadcast timer update
+            const elapsedMin = Math.floor(elapsedSec / 60);
+            const timeGoal = goalsCache.find(g => (g.type === 'time_management' || g.type === 'time_saving') && g.enabled);
+            if (timeGoal) {
+              broadcastEvent({ type: 'timer_update', elapsed_sec: elapsedSec, max_sec: (timeGoal.config?.max_min || 45) * 60 });
+            }
+          }
+        }
       }
     }
   };

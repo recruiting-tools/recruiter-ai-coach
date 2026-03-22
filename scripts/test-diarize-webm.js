@@ -60,15 +60,17 @@ ws.on('open', () => {
   ws.send(audioData);
   console.log(`  📤 Sent ${(audioData.length / 1024).toFixed(0)} KB in one message`);
 
-  // Wait for Deepgram to process and return transcripts
-  console.log('  ⏳ Waiting 15s for Deepgram to return results...\n');
+  // Wait for Deepgram to process the full audio.
+  // 2 min audio ≈ needs ~30s of processing time with streaming.
+  const WAIT_MS = parseInt(process.env.WAIT_MS || '45000', 10);
+  console.log(`  ⏳ Waiting ${WAIT_MS / 1000}s for Deepgram to return results...\n`);
   setTimeout(() => {
     ws.send(JSON.stringify({ type: 'stop' }));
     setTimeout(() => {
       printSummary();
       ws.close();
     }, 5000);
-  }, 15000);
+  }, WAIT_MS);
 
 });
 

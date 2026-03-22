@@ -11,7 +11,7 @@ class DeepgramStream {
 
     this.params = {
       model: 'nova-2',
-      language: options.language || 'ru',
+      language: options.language || 'multi',
       smart_format: 'true',
       interim_results: 'true',
       endpointing: '300',
