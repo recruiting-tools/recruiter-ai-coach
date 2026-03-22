@@ -3,11 +3,14 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const WebSocket = require('ws');
 const cors = require('cors');
 
 const fireflies = require('./fireflies');
 const claude = require('./claude');
 const { initBot } = require('./telegram');
+const DeepgramStream = require('./deepgram-stream');
+const interviewConfigRoutes = require('./routes/interview-config-routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,6 +18,9 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(express.json());
+
+// Interview config routes (candidates, jobs, interviews CRUD)
+app.use('/api', interviewConfigRoutes);
 
 // Session manager
 const sessions = new Map(); // sessionId → { transcriptId, realtimeConnection, clients: Set }
@@ -264,6 +270,172 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('[WS] Client disconnected:', socket.id);
+  });
+});
+
+// ──────────────────────────────────────────────────
+// WebSocket Audio Streaming (Chrome Extension → Deepgram)
+// ──────────────────────────────────────────────────
+
+const wss = new WebSocket.Server({ noServer: true });
+
+// MUST use prependListener — Socket.IO's Engine.IO destroys sockets for non-matching paths.
+// Without prepend, Engine.IO's handler fires first and kills /ws/audio connections.
+server.prependListener('upgrade', (req, socket, head) => {
+  if (req.url.startsWith('/ws/audio')) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  }
+});
+
+wss.on('connection', (ws, req) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const sessionId = url.searchParams.get('sessionId') || `audio_${Date.now()}`;
+
+  console.log(`\n[Audio WS] Client connected, session: ${sessionId}`);
+
+  if (!process.env.DEEPGRAM_API_KEY) {
+    ws.send(JSON.stringify({ type: 'error', error: 'DEEPGRAM_API_KEY not configured' }));
+    ws.close();
+    return;
+  }
+
+  // Create Deepgram streaming connection
+  const dg = new DeepgramStream(process.env.DEEPGRAM_API_KEY);
+
+  let finalBuffer = '';
+  let segmentCount = 0;
+
+  let lastSpeaker = null; // track speaker across fragments
+
+  dg.onTranscript = async ({ transcript, isFinal, speechFinal, speaker }) => {
+    // Track the latest speaker info from diarization
+    if (speaker) lastSpeaker = speaker;
+
+    // Send transcript to Chrome Extension (with speaker info)
+    ws.send(JSON.stringify({
+      type: isFinal ? 'transcript_final' : 'transcript_interim',
+      text: transcript,
+      speaker: speaker || null,
+      isFinal,
+      speechFinal,
+    }));
+
+    if (isFinal && transcript.trim()) {
+      finalBuffer += transcript + ' ';
+    }
+
+    // On speech boundary — process buffered text for hints
+    if (speechFinal && finalBuffer.trim()) {
+      const text = finalBuffer.trim();
+      finalBuffer = '';
+      segmentCount++;
+
+      // Use lastSpeaker to label the segment
+      const speakerLabel = lastSpeaker ? `Speaker ${lastSpeaker.id}` : 'Auto';
+
+      const segment = {
+        chunkId: `dg_${Date.now()}`,
+        text,
+        speaker: speakerLabel,
+        speakerInfo: lastSpeaker || null,
+        timestamp: new Date().toISOString(),
+      };
+
+      lastSpeaker = null; // reset after consuming
+
+      console.log(`[Audio WS] Segment #${segmentCount}: "${text.slice(0, 80)}..."`);
+
+      claude.addToContext(sessionId, segment);
+
+      // Also broadcast via Socket.IO if anyone is listening
+      io.to(sessionId).emit('transcription', segment);
+
+      const hint = await claude.generateHint(sessionId, segment);
+      if (hint) {
+        console.log(`[Audio WS] Hint: ${hint.slice(0, 80)}`);
+        ws.send(JSON.stringify({ type: 'hint', hint }));
+        io.to(sessionId).emit('hint', { hint, timestamp: new Date().toISOString() });
+
+        // Send to Telegram
+        const { sendHint } = require('./telegram');
+        sendHint(process.env.TELEGRAM_CHAT_ID, hint).catch(() => {});
+      }
+    }
+  };
+
+  dg.onUtteranceEnd = () => {
+    // Flush any remaining buffered text
+    if (finalBuffer.trim()) {
+      const text = finalBuffer.trim();
+      finalBuffer = '';
+
+      const segment = {
+        chunkId: `dg_utt_${Date.now()}`,
+        text,
+        speaker: 'Auto',
+        timestamp: new Date().toISOString(),
+      };
+
+      claude.addToContext(sessionId, segment);
+      console.log(`[Audio WS] Utterance end flush: "${text.slice(0, 80)}"`);
+    }
+  };
+
+  dg.onError = (err) => {
+    ws.send(JSON.stringify({ type: 'error', error: `Deepgram: ${err.message}` }));
+  };
+
+  dg.onClose = (code) => {
+    console.log(`[Audio WS] Deepgram closed (${code}), reconnecting...`);
+    ws.send(JSON.stringify({ type: 'deepgram_closed' }));
+    // Auto-reconnect Deepgram if client is still connected
+    if (ws.readyState === 1) {
+      setTimeout(() => {
+        console.log('[Audio WS] Reconnecting Deepgram...');
+        dg.connect();
+      }, 1000);
+    }
+  };
+
+  dg.connect();
+
+  // Receive audio chunks from Chrome Extension
+  let audioChunkCount = 0;
+  const debugChunks = []; // save first chunks for debugging
+  ws.on('message', (data, isBinary) => {
+    if (isBinary || Buffer.isBuffer(data)) {
+      audioChunkCount++;
+      if (audioChunkCount <= 5 || audioChunkCount % 40 === 0) {
+        console.log(`[Audio WS] Chunk #${audioChunkCount}, ${data.length} bytes, dg.ready=${dg.ready}`);
+      }
+      // Save first 40 chunks (~10 sec) to file for debugging
+      if (audioChunkCount <= 40) {
+        debugChunks.push(Buffer.from(data));
+        if (audioChunkCount === 40) {
+          const fs = require('fs');
+          const path = require('path').join(__dirname, '../../debug-audio.webm');
+          fs.writeFileSync(path, Buffer.concat(debugChunks));
+          console.log(`[Debug] Saved 40 chunks to ${path}`);
+        }
+      }
+      dg.sendAudio(data);
+    } else {
+      // Text = JSON control message
+      try {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'stop') {
+          dg.close();
+        }
+      } catch {}
+    }
+  });
+
+  ws.on('close', () => {
+    console.log(`[Audio WS] Client disconnected, session: ${sessionId}`);
+    dg.close();
+    claude.clearSession(sessionId);
   });
 });
 

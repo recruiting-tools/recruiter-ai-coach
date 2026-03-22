@@ -1,8 +1,9 @@
 const $ = (id) => document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const { isCapturing } = await chrome.runtime.sendMessage({ type: 'get_status' }) || {};
-  if (isCapturing) setActive(true);
+  const res = await chrome.runtime.sendMessage({ type: 'get_status' }) || {};
+  const active = res.captureState === 'capturing' || res.captureState === 'starting';
+  if (active) setActive(true);
 });
 
 $('startBtn').addEventListener('click', async () => {
@@ -38,12 +39,28 @@ function setActive(active) {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
+  // New state machine events
+  if (msg.type === 'capture_state') {
+    if (msg.state === 'capturing') {
+      setActive(true);
+      $('status').textContent = '✅ Слушаю оба голоса...';
+    } else if (msg.state === 'idle') {
+      setActive(false);
+      $('status').textContent = 'Остановлено';
+    } else if (msg.state === 'error') {
+      setActive(false);
+      $('status').textContent = '❌ ' + (msg.error || 'Ошибка захвата');
+    } else if (msg.state === 'starting') {
+      $('status').textContent = '⏳ Подключаюсь...';
+    }
+    return;
+  }
+  // Legacy status events from content.js broadcast
   if (msg.type === 'status') {
     if (msg.status === 'listening') {
       setActive(true);
       $('status').textContent = '✅ Слушаю оба голоса...';
-    }
-    if (msg.status === 'stopped' || msg.status === 'error') {
+    } else if (msg.status === 'stopped' || msg.status === 'error') {
       setActive(false);
       $('status').textContent = msg.error || 'Остановлено';
     }

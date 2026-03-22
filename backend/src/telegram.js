@@ -9,8 +9,8 @@ let bot = null;
 let activeSessions = new Map(); // chatId → { sessionId, realtimeConnection }
 
 function initBot(sessionManager) {
-  if (!BOT_TOKEN) {
-    console.warn('[Telegram] BOT_TOKEN not set, Telegram bot disabled');
+  if (!BOT_TOKEN || BOT_TOKEN === '8579792398:AAHHtXEVp8Zqalqo3YRACE4vgTfizFMUoX4') {
+    console.warn('[Telegram] Bot disabled (invalid token)');
     return null;
   }
 
