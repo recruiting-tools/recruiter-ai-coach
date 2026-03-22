@@ -29,11 +29,68 @@
 
 ---
 
+## Пресеты + Методологии: API и UX Flow
+
+### Концепция
+
+**Пресет** = ЧТО оценивать (набор целей для типа интервью).
+**Методология** = КАК коучить (формат вопросов и подсказок: STAR, Behavioral, Topgrading...).
+Можно выбрать оба, один, или собрать цели вручную.
+
+### UX Flow (popup / dashboard wizard)
+
+1. Рекрутер выбирает **пресет** (Screening, Deep Technical, Culture Fit, Leadership, Full) — получает готовый набор целей
+2. Опционально выбирает **методологию** (STAR, Behavioral, Situational, Topgrading, Competency-Based, Case) — влияет на стиль подсказок
+3. Может **отжать галку** у любой цели из пресета
+4. Может **добавить цели текстом** ("Спросить про опыт с Kafka", "Уточнить gap в резюме 2023-2024")
+5. Нажимает "Старт" → `goals[]` + `methodology` сохраняются в интервью
+
+### API endpoints (нужно добавить)
+
+```
+POST   /api/interviews/:id/apply-preset      → { preset: "screening" } → Goal[] (УЖЕ ЕСТЬ)
+GET    /api/presets                            → список пресетов с goals (УЖЕ ЕСТЬ)
+GET    /api/methodologies                      → список методологий с описанием (НОВЫЙ)
+PUT    /api/interviews/:id/methodology         → { methodology: "star" } (НОВЫЙ)
+PUT    /api/interviews/:id/goals               → { goals: Goal[] } (УЖЕ ЕСТЬ — для toggle/add)
+PATCH  /api/interviews/:id/goals/:goalId       → { enabled: false } (НОВЫЙ — toggle одной цели)
+POST   /api/interviews/:id/goals/custom        → { text: "Спросить про Kafka" } (НОВЫЙ — добавить цель текстом)
+```
+
+### Методологии (справочные данные)
+
+| ID | Название | Описание | Ключевые фразы для подсказок |
+|----|----------|----------|------------------------------|
+| `star` | STAR | Situation → Task → Action → Result | "Какой был результат?", "Опиши ситуацию" |
+| `behavioral` | Behavioral | Прошлый опыт предсказывает будущее | "Расскажите о ситуации когда...", "Дайте пример" |
+| `situational` | Situational | Гипотетические сценарии | "Что бы вы сделали если...", "Как бы вы поступили" |
+| `topgrading` | Topgrading | Хронологический разбор позиций | "Что вас наняли делать?", "Что скажет руководитель?" |
+| `competency_based` | Competency-Based | Вопросы по рубрике компетенций | Оценочные якоря после каждого ответа |
+| `case_interview` | Case Interview | Бизнес/технический кейс | "Задал уточняющие вопросы?", "Рассмотрел альтернативы?" |
+
+### Хранение в DB
+
+В таблице `interviews`:
+- `goals` (TEXT/JSON) — массив Goal[] (уже есть)
+- `preset` (TEXT) — выбранный пресет, nullable (НОВОЕ поле)
+- `methodology` (TEXT) — выбранная методология, nullable (НОВОЕ поле)
+
+### Что нужно сделать
+
+- [ ] Добавить поля `preset` и `methodology` в таблицу `interviews`
+- [ ] `GET /api/methodologies` — справочный endpoint
+- [ ] `PUT /api/interviews/:id/methodology` — сохранить методологию
+- [ ] `PATCH /api/interviews/:id/goals/:goalId` — toggle одной цели
+- [ ] `POST /api/interviews/:id/goals/custom` — добавить произвольную цель текстом
+- [ ] При `GET /api/interviews/active` возвращать `preset` и `methodology` — Track 2 использует для system prompt
+
+---
+
 ## Открытые вопросы
 
 - **SQLite migrations**: создаётся при старте — нужны ли версионированные миграции?
 - **Goals runtime state**: `addressed`/`addressed_at` хранить в interviews.goals JSON или отдельная таблица?
-- **Preset + custom goals**: нужен ли endpoint для toggle отдельной цели (без перезаписи всех goals)?
+- ~~**Preset + custom goals**: нужен ли endpoint для toggle отдельной цели?~~ → Да, нужен `PATCH /goals/:goalId`
 
 ---
 

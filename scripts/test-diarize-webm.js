@@ -50,36 +50,26 @@ const stats = {
 const ws = new WebSocket(WS_URL);
 
 ws.on('open', () => {
-  console.log('✅ WebSocket connected — sending audio chunks...\n');
+  console.log('✅ WebSocket connected — sending audio...\n');
 
-  let offset = 0;
-  let chunkNum = 0;
+  // Send the entire file as one binary message.
+  // Deepgram streaming accepts a complete WebM blob — slicing into arbitrary
+  // byte chunks corrupts WebM cluster boundaries and produces silence.
+  // The browser MediaRecorder produces valid clusters per ondataavailable call,
+  // so this single-send approach matches how Deepgram REST works.
+  ws.send(audioData);
+  console.log(`  📤 Sent ${(audioData.length / 1024).toFixed(0)} KB in one message`);
 
-  const interval = setInterval(() => {
-    if (offset >= audioData.length) {
-      clearInterval(interval);
-      console.log('\n📤 All chunks sent. Waiting 5s for final results...\n');
-      // Send stop and wait for remaining transcripts
-      setTimeout(() => {
-        ws.send(JSON.stringify({ type: 'stop' }));
-        setTimeout(() => {
-          printSummary();
-          ws.close();
-        }, 3000);
-      }, 5000);
-      return;
-    }
+  // Wait for Deepgram to process and return transcripts
+  console.log('  ⏳ Waiting 15s for Deepgram to return results...\n');
+  setTimeout(() => {
+    ws.send(JSON.stringify({ type: 'stop' }));
+    setTimeout(() => {
+      printSummary();
+      ws.close();
+    }, 5000);
+  }, 15000);
 
-    const chunk = audioData.slice(offset, offset + CHUNK_SIZE);
-    ws.send(chunk);
-    offset += CHUNK_SIZE;
-    chunkNum++;
-
-    if (chunkNum <= 3 || chunkNum % 20 === 0) {
-      const progress = ((offset / audioData.length) * 100).toFixed(0);
-      process.stdout.write(`  Chunk #${chunkNum} (${progress}%)\r`);
-    }
-  }, CHUNK_INTERVAL_MS);
 });
 
 ws.on('message', (raw) => {
