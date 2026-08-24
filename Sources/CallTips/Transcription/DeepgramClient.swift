@@ -9,12 +9,18 @@ final class DeepgramClient: NSObject {
     private let apiKey: String
 
     var onTranscript: ((String, Bool) -> Void)?  // (text, isFinal)
+    var onConnected: (() -> Void)?
 
     enum Speaker { case me, them }
 
-    init(apiKey: String, speaker: Speaker) {
+    private let primaryLanguage: String
+    private let secondaryLanguage: String
+
+    init(apiKey: String, speaker: Speaker, primaryLanguage: String = "ru", secondaryLanguage: String = "en") {
         self.apiKey = apiKey
         self.speaker = speaker
+        self.primaryLanguage = primaryLanguage
+        self.secondaryLanguage = secondaryLanguage
     }
 
     func connect() {
@@ -22,16 +28,27 @@ final class DeepgramClient: NSObject {
         components.scheme = "wss"
         components.host = "api.deepgram.com"
         components.path = "/v1/listen"
-        components.queryItems = [
+
+        // If there's a secondary language, use detect_language so Deepgram switches automatically.
+        // Primary language is always listed first — Deepgram uses it as the default.
+        var queryItems: [URLQueryItem] = [
             .init(name: "model", value: "nova-2"),
-            .init(name: "language", value: "multi"),  // auto-detect RU/EN
             .init(name: "smart_format", value: "true"),
             .init(name: "interim_results", value: "true"),
             .init(name: "encoding", value: "linear16"),
             .init(name: "sample_rate", value: "16000"),
             .init(name: "channels", value: "1"),
-            .init(name: "endpointing", value: "500"),  // ms silence to finalize utterance
+            .init(name: "endpointing", value: "500"),
         ]
+        if secondaryLanguage.isEmpty {
+            queryItems.append(.init(name: "language", value: primaryLanguage))
+        } else {
+            // detect_language picks from the provided list; list primary first
+            queryItems.append(.init(name: "detect_language", value: "true"))
+            queryItems.append(.init(name: "language", value: primaryLanguage))
+            queryItems.append(.init(name: "language", value: secondaryLanguage))
+        }
+        components.queryItems = queryItems
 
         var request = URLRequest(url: components.url!)
         request.setValue("Token \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -80,6 +97,7 @@ extension DeepgramClient: URLSessionWebSocketDelegate {
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
                     didOpenWithProtocol protocol: String?) {
         print("[Deepgram:\(speaker == .me ? "mic" : "speakers")] connected")
+        onConnected?()
     }
 }
 

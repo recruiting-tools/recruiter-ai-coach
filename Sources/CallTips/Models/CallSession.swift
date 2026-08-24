@@ -34,12 +34,15 @@ final class CallSession: ObservableObject {
     @Published var callType: CallType = .workCall
     @Published var myGoal: String = ""
     @Published var additionalContext: String = ""
+    @Published var primaryLanguage: String = "ru"    // BCP-47
+    @Published var secondaryLanguage: String = "en"
 
     // Live session
     @Published var transcript: [TranscriptLine] = []
     @Published var tips: [Tip] = []
     @Published var isRecording = false
     @Published var latestTip: Tip?
+    @Published var debugStatus: String = ""
 
     func addLine(speaker: Speaker, text: String) {
         transcript.append(TranscriptLine(speaker: speaker, text: text, timestamp: Date()))

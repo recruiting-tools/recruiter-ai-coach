@@ -50,7 +50,7 @@ final class CoachEngine {
         request.setValue("call-tips", forHTTPHeaderField: "X-Title")
 
         let body: [String: Any] = [
-            "model": "anthropic/claude-sonnet-4-5",
+            "model": "google/gemini-flash-2.0",
             "max_tokens": 150,
             "messages": [["role": "user", "content": prompt]]
         ]

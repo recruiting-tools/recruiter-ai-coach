@@ -28,6 +28,14 @@ struct OverlayView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
+            if !session.debugStatus.isEmpty {
+                Text(session.debugStatus)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+            }
+
             Divider()
 
             // Latest tip — main focus area

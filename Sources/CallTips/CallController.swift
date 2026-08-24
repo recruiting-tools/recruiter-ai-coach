@@ -17,8 +17,9 @@ final class CallController: ObservableObject {
     private func loadDotEnv() -> [String: String] {
         let candidates = [
             URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(".env"),
+            Bundle.main.resourceURL?.appendingPathComponent(".env"),
             Bundle.main.bundleURL.appendingPathComponent(".env"),
-        ]
+        ].compactMap { $0 }
         for url in candidates {
             guard let content = try? String(contentsOf: url) else { continue }
             var result: [String: String] = [:]
@@ -36,24 +37,38 @@ final class CallController: ObservableObject {
 
     func startCall(session: CallSession) async {
         session.isRecording = true
+        session.debugStatus = "⏳ Старт..."
 
-        coachEngine = CoachEngine(apiKey: openrouterKey)
+        let dg = deepgramKey
+        let or = openrouterKey
+        session.debugStatus = "🔑 DG:\(dg.isEmpty ? "❌ нет" : "✅") OR:\(or.isEmpty ? "❌ нет" : "✅")"
+
+        coachEngine = CoachEngine(apiKey: or)
+
+        let primary = session.primaryLanguage
+        let secondary = session.secondaryLanguage
 
         // Set up Deepgram for microphone
-        micDeepgram = DeepgramClient(apiKey: deepgramKey, speaker: .me)
+        micDeepgram = DeepgramClient(apiKey: dg, speaker: .me, primaryLanguage: primary, secondaryLanguage: secondary)
+        micDeepgram?.onConnected = { Task { @MainActor in session.debugStatus = "🎙 mic подключён" } }
         micDeepgram?.onTranscript = { [weak session, weak self] text, isFinal in
-            guard isFinal, let session else { return }
+            guard let session else { return }
             Task { @MainActor in
+                session.debugStatus = "🎙 mic: \(text.prefix(30))..."
+                guard isFinal else { return }
                 session.addLine(speaker: .me, text: text)
                 await self?.maybeFetchTip(session: session)
             }
         }
 
         // Set up Deepgram for speakers
-        speakerDeepgram = DeepgramClient(apiKey: deepgramKey, speaker: .them)
+        speakerDeepgram = DeepgramClient(apiKey: dg, speaker: .them, primaryLanguage: primary, secondaryLanguage: secondary)
+        speakerDeepgram?.onConnected = { Task { @MainActor in session.debugStatus = "🔊 speakers подключён" } }
         speakerDeepgram?.onTranscript = { [weak session, weak self] text, isFinal in
-            guard isFinal, let session else { return }
+            guard let session else { return }
             Task { @MainActor in
+                session.debugStatus = "🔊 them: \(text.prefix(30))..."
+                guard isFinal else { return }
                 session.addLine(speaker: .them, text: text)
                 await self?.maybeFetchTip(session: session)
             }
@@ -63,17 +78,26 @@ final class CallController: ObservableObject {
         speakerDeepgram?.connect()
 
         // Wire audio → Deepgram
-        micCapture.onAudioChunk = { [weak self] data in
+        var micChunks = 0
+        micCapture.onAudioChunk = { [weak self, weak session] data in
             self?.micDeepgram?.send(data)
+            micChunks += 1
+            if micChunks == 10 {
+                Task { @MainActor in session?.debugStatus = "🎙 аудио идёт (\(data.count)b/chunk)" }
+            }
         }
         speakerCapture.onAudioChunk = { [weak self] data in
             self?.speakerDeepgram?.send(data)
         }
 
         do {
+            session.debugStatus = "🎙 запрос микрофона..."
             try micCapture.start()
+            session.debugStatus = "🔊 запрос screen capture..."
             try await speakerCapture.start()
+            session.debugStatus = "✅ оба потока активны"
         } catch {
+            session.debugStatus = "❌ \(error.localizedDescription)"
             print("[CallController] Failed to start capture: \(error)")
         }
     }
