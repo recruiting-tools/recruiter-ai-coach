@@ -28,12 +28,17 @@ struct OverlayView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
-            if !session.debugStatus.isEmpty {
-                Text(session.debugStatus)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 4)
+            if !session.debugLog.isEmpty {
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(session.debugLog.suffix(5), id: \.self) { entry in
+                        Text(entry)
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
             }
 
             Divider()

@@ -37,11 +37,11 @@ final class CallController: ObservableObject {
 
     func startCall(session: CallSession) async {
         session.isRecording = true
-        session.debugStatus = "⏳ Старт..."
+        session.log("⏳ Старт...")
 
         let dg = deepgramKey
         let or = openrouterKey
-        session.debugStatus = "🔑 DG:\(dg.isEmpty ? "❌ нет" : "✅") OR:\(or.isEmpty ? "❌ нет" : "✅")"
+        session.log("🔑 DG:\(dg.isEmpty ? "❌ нет" : "✅(\(dg.prefix(6))...)") OR:\(or.isEmpty ? "❌ нет" : "✅")")
 
         coachEngine = CoachEngine(apiKey: or)
 
@@ -50,27 +50,31 @@ final class CallController: ObservableObject {
 
         // Set up Deepgram for microphone
         micDeepgram = DeepgramClient(apiKey: dg, speaker: .me, primaryLanguage: primary, secondaryLanguage: secondary)
-        micDeepgram?.onConnected = { Task { @MainActor in session.debugStatus = "🎙 mic подключён" } }
+        micDeepgram?.onConnected = { Task { @MainActor in session.log("🎙 mic → DG подключён") } }
+        micDeepgram?.onError = { err in Task { @MainActor in session.log("❌ mic DG: \(err)") } }
         micDeepgram?.onTranscript = { [weak session, weak self] text, isFinal in
             guard let session else { return }
             Task { @MainActor in
-                session.debugStatus = "🎙 mic: \(text.prefix(30))..."
-                guard isFinal else { return }
-                session.addLine(speaker: .me, text: text)
-                await self?.maybeFetchTip(session: session)
+                if isFinal {
+                    session.log("🎙 Я: \(text.prefix(40))")
+                    session.addLine(speaker: .me, text: text)
+                    await self?.maybeFetchTip(session: session)
+                }
             }
         }
 
         // Set up Deepgram for speakers
         speakerDeepgram = DeepgramClient(apiKey: dg, speaker: .them, primaryLanguage: primary, secondaryLanguage: secondary)
-        speakerDeepgram?.onConnected = { Task { @MainActor in session.debugStatus = "🔊 speakers подключён" } }
+        speakerDeepgram?.onConnected = { Task { @MainActor in session.log("🔊 spk → DG подключён") } }
+        speakerDeepgram?.onError = { err in Task { @MainActor in session.log("❌ spk DG: \(err)") } }
         speakerDeepgram?.onTranscript = { [weak session, weak self] text, isFinal in
             guard let session else { return }
             Task { @MainActor in
-                session.debugStatus = "🔊 them: \(text.prefix(30))..."
-                guard isFinal else { return }
-                session.addLine(speaker: .them, text: text)
-                await self?.maybeFetchTip(session: session)
+                if isFinal {
+                    session.log("🔊 Они: \(text.prefix(40))")
+                    session.addLine(speaker: .them, text: text)
+                    await self?.maybeFetchTip(session: session)
+                }
             }
         }
 
@@ -79,26 +83,30 @@ final class CallController: ObservableObject {
 
         // Wire audio → Deepgram
         var micChunks = 0
+        var spkChunks = 0
         micCapture.onAudioChunk = { [weak self, weak session] data in
             self?.micDeepgram?.send(data)
             micChunks += 1
             if micChunks == 10 {
-                Task { @MainActor in session?.debugStatus = "🎙 аудио идёт (\(data.count)b/chunk)" }
+                Task { @MainActor in session?.log("🎙 mic аудио идёт (\(data.count)b/chunk)") }
             }
         }
-        speakerCapture.onAudioChunk = { [weak self] data in
+        speakerCapture.onAudioChunk = { [weak self, weak session] data in
             self?.speakerDeepgram?.send(data)
+            spkChunks += 1
+            if spkChunks == 5 {
+                Task { @MainActor in session?.log("🔊 spk аудио идёт (\(data.count)b/chunk)") }
+            }
         }
 
         do {
-            session.debugStatus = "🎙 запрос микрофона..."
+            session.log("🎙 запрос микрофона...")
             try micCapture.start()
-            session.debugStatus = "🔊 запрос screen capture..."
+            session.log("🔊 запрос screen capture...")
             try await speakerCapture.start()
-            session.debugStatus = "✅ оба потока активны"
+            session.log("✅ оба потока активны")
         } catch {
-            session.debugStatus = "❌ \(error.localizedDescription)"
-            print("[CallController] Failed to start capture: \(error)")
+            session.log("❌ захват: \(error.localizedDescription)")
         }
     }
 

@@ -43,6 +43,15 @@ final class CallSession: ObservableObject {
     @Published var isRecording = false
     @Published var latestTip: Tip?
     @Published var debugStatus: String = ""
+    @Published var debugLog: [String] = []   // rolling log, last 12 entries
+
+    func log(_ msg: String) {
+        let ts = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let entry = "[\(ts)] \(msg)"
+        debugLog.append(entry)
+        if debugLog.count > 12 { debugLog.removeFirst() }
+        debugStatus = msg
+    }
 
     func addLine(speaker: Speaker, text: String) {
         transcript.append(TranscriptLine(speaker: speaker, text: text, timestamp: Date()))

@@ -10,6 +10,7 @@ final class DeepgramClient: NSObject {
 
     var onTranscript: ((String, Bool) -> Void)?  // (text, isFinal)
     var onConnected: (() -> Void)?
+    var onError: ((String) -> Void)?
 
     enum Speaker { case me, them }
 
@@ -40,14 +41,9 @@ final class DeepgramClient: NSObject {
             .init(name: "channels", value: "1"),
             .init(name: "endpointing", value: "500"),
         ]
-        if secondaryLanguage.isEmpty {
-            queryItems.append(.init(name: "language", value: primaryLanguage))
-        } else {
-            // detect_language picks from the provided list; list primary first
-            queryItems.append(.init(name: "detect_language", value: "true"))
-            queryItems.append(.init(name: "language", value: primaryLanguage))
-            queryItems.append(.init(name: "language", value: secondaryLanguage))
-        }
+        // Use primary language explicitly — most reliable for streaming.
+        // detect_language causes buffering delays and is unreliable on WebSocket.
+        queryItems.append(.init(name: "language", value: primaryLanguage))
         components.queryItems = queryItems
 
         var request = URLRequest(url: components.url!)
@@ -69,14 +65,17 @@ final class DeepgramClient: NSObject {
 
     private func receiveLoop() {
         webSocketTask?.receive { [weak self] result in
+            guard let self else { return }
             switch result {
             case .success(let message):
                 if case .string(let json) = message {
-                    self?.parseResponse(json)
+                    print("[Deepgram:\(self.speaker == .me ? "mic" : "spk")] ← \(json.prefix(200))")
+                    self.parseResponse(json)
                 }
-                self?.receiveLoop()
+                self.receiveLoop()
             case .failure(let error):
-                print("[Deepgram:\(self?.speaker == .me ? "mic" : "speakers")] error: \(error)")
+                print("[Deepgram:\(self.speaker == .me ? "mic" : "spk")] WS error: \(error)")
+                self.onError?("WS: \(error.localizedDescription)")
             }
         }
     }
@@ -96,8 +95,21 @@ final class DeepgramClient: NSObject {
 extension DeepgramClient: URLSessionWebSocketDelegate {
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
                     didOpenWithProtocol protocol: String?) {
-        print("[Deepgram:\(speaker == .me ? "mic" : "speakers")] connected")
         onConnected?()
+    }
+
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
+                    didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        let msg = reason.flatMap { String(data: $0, encoding: .utf8) } ?? "code=\(closeCode.rawValue)"
+        onError?("WS closed: \(msg)")
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    didCompleteWithError error: Error?) {
+        if let error {
+            let http = (task.response as? HTTPURLResponse).map { " HTTP \($0.statusCode)" } ?? ""
+            onError?("task error\(http): \(error.localizedDescription)")
+        }
     }
 }
 
