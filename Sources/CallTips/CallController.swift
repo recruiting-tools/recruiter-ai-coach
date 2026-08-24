@@ -9,9 +9,30 @@ final class CallController: ObservableObject {
     private var speakerDeepgram: DeepgramClient?
     private var coachEngine: CoachEngine?
 
-    // Read API keys from environment or config
-    private var deepgramKey: String { ProcessInfo.processInfo.environment["DEEPGRAM_API_KEY"] ?? "" }
-    private var claudeKey: String { ProcessInfo.processInfo.environment["CLAUDE_API_KEY"] ?? "" }
+    // Read API keys: env vars take priority, then .env file next to the binary
+    private lazy var envVars: [String: String] = loadDotEnv()
+    private var deepgramKey: String { ProcessInfo.processInfo.environment["DEEPGRAM_API_KEY"] ?? envVars["DEEPGRAM_API_KEY"] ?? "" }
+    private var claudeKey: String { ProcessInfo.processInfo.environment["CLAUDE_API_KEY"] ?? envVars["CLAUDE_API_KEY"] ?? "" }
+
+    private func loadDotEnv() -> [String: String] {
+        let candidates = [
+            URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(".env"),
+            Bundle.main.bundleURL.appendingPathComponent(".env"),
+        ]
+        for url in candidates {
+            guard let content = try? String(contentsOf: url) else { continue }
+            var result: [String: String] = [:]
+            for line in content.components(separatedBy: .newlines) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty, !trimmed.hasPrefix("#"), let eq = trimmed.firstIndex(of: "=") else { continue }
+                let key = String(trimmed[trimmed.startIndex..<eq])
+                let value = String(trimmed[trimmed.index(after: eq)...]).trimmingCharacters(in: .init(charactersIn: "\"'"))
+                result[key] = value
+            }
+            return result
+        }
+        return [:]
+    }
 
     func startCall(session: CallSession) async {
         session.isRecording = true
