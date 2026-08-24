@@ -1,0 +1,9 @@
+/Users/vova/Code/call-tips/Sources/CallTips/AI/CoachEngine.swift
+/Users/vova/Code/call-tips/Sources/CallTips/Audio/MicCapture.swift
+/Users/vova/Code/call-tips/Sources/CallTips/Audio/SpeakerCapture.swift
+/Users/vova/Code/call-tips/Sources/CallTips/CallController.swift
+/Users/vova/Code/call-tips/Sources/CallTips/CallTipsApp.swift
+/Users/vova/Code/call-tips/Sources/CallTips/Models/CallSession.swift
+/Users/vova/Code/call-tips/Sources/CallTips/Transcription/DeepgramClient.swift
+/Users/vova/Code/call-tips/Sources/CallTips/UI/OverlayView.swift
+/Users/vova/Code/call-tips/Sources/CallTips/UI/PreCallView.swift

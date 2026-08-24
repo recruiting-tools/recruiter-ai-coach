@@ -9,6 +9,7 @@ final class CoachEngine {
         self.apiKey = apiKey
     }
 
+    @MainActor
     func requestTip(session: CallSession) async -> String? {
         let prompt = buildPrompt(session: session)
         return await callClaude(prompt: prompt)
@@ -16,6 +17,7 @@ final class CoachEngine {
 
     // MARK: - Prompt construction (customize here for different call types)
 
+    @MainActor
     private func buildPrompt(session: CallSession) -> String {
         """
         Ты — реальтайм-коуч на звонке. Тип звонка: \(session.callType.rawValue).

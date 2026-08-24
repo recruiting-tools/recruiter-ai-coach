@@ -17,7 +17,6 @@ final class SpeakerCapture: NSObject {
 
         let config = SCStreamConfiguration()
         config.capturesAudio = true
-        config.excludesCurrentProcessAudioFromMixdown = true  // don't capture our own UI sounds
         config.sampleRate = 16000
         config.channelCount = 1
 

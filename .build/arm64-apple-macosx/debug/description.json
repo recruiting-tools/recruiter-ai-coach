@@ -1,0 +1,376 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.CallTips-arm64-apple-macosx16.0-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/sources",
+      "importPath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/AI/CoachEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Audio/MicCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Audio/SpeakerCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/CallController.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/CallTipsApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Models/CallSession.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Transcription/DeepgramClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/UI/OverlayView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/UI/PreCallView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "CallTips",
+      "moduleOutputPath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/Modules/CallTips.swiftmodule",
+      "objects" : [
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CoachEngine.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/MicCapture.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/SpeakerCapture.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallController.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallTipsApp.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallSession.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/DeepgramClient.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/OverlayView.swift.o",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/PreCallView.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-module-cache-path",
+        "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "CallTips_main",
+        "-swift-version",
+        "5",
+        "-F",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "call_tips"
+      ],
+      "outputFileMapPath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CoachEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/MicCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/SpeakerCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallController.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallTipsApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallSession.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/DeepgramClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/OverlayView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/PreCallView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/Modules/CallTips.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/vova/Code/call-tips/Sources/CallTips/AI/CoachEngine.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/Audio/MicCapture.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/Audio/SpeakerCapture.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/CallController.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/CallTipsApp.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/Models/CallSession.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/Transcription/DeepgramClient.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/UI/OverlayView.swift",
+        "/Users/vova/Code/call-tips/Sources/CallTips/UI/PreCallView.swift"
+      ],
+      "tempsPath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "CallTips" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "CallTips",
+      "-package-name",
+      "call_tips",
+      "-incremental",
+      "-c",
+      "/Users/vova/Code/call-tips/Sources/CallTips/AI/CoachEngine.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/Audio/MicCapture.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/Audio/SpeakerCapture.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/CallController.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/CallTipsApp.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/Models/CallSession.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/Transcription/DeepgramClient.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/UI/OverlayView.swift",
+      "/Users/vova/Code/call-tips/Sources/CallTips/UI/PreCallView.swift",
+      "-I",
+      "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-module-cache-path",
+      "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "CallTips_main",
+      "-swift-version",
+      "5",
+      "-F",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "call_tips",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "CallTips" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "enableAllTraits" : false
+  },
+  "writeCommands" : {
+    "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips-entitlement.plist"
+    },
+    "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/AI/CoachEngine.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Audio/MicCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Audio/SpeakerCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/CallController.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/CallTipsApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Models/CallSession.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/Transcription/DeepgramClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/UI/OverlayView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/Sources/CallTips/UI/PreCallView.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/sources"
+    },
+    "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallController.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallSession.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CallTipsApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/CoachEngine.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/DeepgramClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/MicCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/OverlayView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/PreCallView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.build/SpeakerCapture.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/CallTips.product/Objects.LinkFileList"
+    },
+    "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/vova/Code/call-tips/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+    }
+  }
+}

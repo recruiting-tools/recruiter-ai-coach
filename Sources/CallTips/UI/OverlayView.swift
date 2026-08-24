@@ -47,7 +47,7 @@ struct OverlayView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(session.transcript.suffix(30)) { line in
-                            TranscriptLine(line: line)
+                            TranscriptLineRow(line: line)
                         }
                     }
                     .padding(8)
@@ -94,8 +94,8 @@ private struct TipBubble: View {
     }
 }
 
-private struct TranscriptLine: View {
-    let line: Models.TranscriptLine
+private struct TranscriptLineRow: View {
+    let line: CallTips.TranscriptLine
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
