@@ -33,7 +33,7 @@ final class DeepgramClient: NSObject {
         // If there's a secondary language, use detect_language so Deepgram switches automatically.
         // Primary language is always listed first — Deepgram uses it as the default.
         var queryItems: [URLQueryItem] = [
-            .init(name: "model", value: "nova-2"),
+            .init(name: "model", value: "nova-3"),
             .init(name: "smart_format", value: "true"),
             .init(name: "interim_results", value: "true"),
             .init(name: "encoding", value: "linear16"),

@@ -50,7 +50,7 @@ final class CoachEngine {
         request.setValue("call-tips", forHTTPHeaderField: "X-Title")
 
         let body: [String: Any] = [
-            "model": "google/gemini-flash-2.0",
+            "model": "google/gemini-2.5-flash-lite",
             "max_tokens": 150,
             "messages": [["role": "user", "content": prompt]]
         ]
