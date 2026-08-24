@@ -1,6 +1,6 @@
 import Foundation
 
-// Sends recent transcript + call context to Claude and returns a coaching tip.
+// Sends recent transcript + call context to OpenRouter and returns a coaching tip.
 // Called after each finalized utterance from either speaker.
 final class CoachEngine {
     private let apiKey: String
@@ -12,7 +12,7 @@ final class CoachEngine {
     @MainActor
     func requestTip(session: CallSession) async -> String? {
         let prompt = buildPrompt(session: session)
-        return await callClaude(prompt: prompt)
+        return await callOpenRouter(prompt: prompt)
     }
 
     // MARK: - Prompt construction (customize here for different call types)
@@ -38,19 +38,19 @@ final class CoachEngine {
         // - рабочий звонок: подсказывай action items, резюмируй решения
     }
 
-    // MARK: - Claude API call
+    // MARK: - OpenRouter API call (OpenAI-compatible)
 
-    private func callClaude(prompt: String) async -> String? {
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+    private func callOpenRouter(prompt: String) async -> String? {
+        guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else { return nil }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("call-tips", forHTTPHeaderField: "X-Title")
 
         let body: [String: Any] = [
-            "model": "claude-sonnet-4-5-20250514",
+            "model": "anthropic/claude-sonnet-4-5",
             "max_tokens": 150,
             "messages": [["role": "user", "content": prompt]]
         ]
@@ -60,22 +60,26 @@ final class CoachEngine {
 
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
-            let response = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-            let text = response.content.first?.text ?? ""
+            let response = try JSONDecoder().decode(OpenRouterResponse.self, from: data)
+            let text = response.choices.first?.message.content ?? ""
             return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
         } catch {
-            print("[CoachEngine] Claude API error: \(error)")
+            print("[CoachEngine] OpenRouter error: \(error)")
             return nil
         }
     }
 }
 
-// MARK: - Claude response model
+// MARK: - OpenRouter response model
 
-private struct ClaudeResponse: Decodable {
-    let content: [ContentBlock]
+private struct OpenRouterResponse: Decodable {
+    let choices: [Choice]
 
-    struct ContentBlock: Decodable {
-        let text: String
+    struct Choice: Decodable {
+        let message: Message
+    }
+
+    struct Message: Decodable {
+        let content: String
     }
 }

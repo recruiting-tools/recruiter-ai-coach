@@ -12,7 +12,7 @@ final class CallController: ObservableObject {
     // Read API keys: env vars take priority, then .env file next to the binary
     private lazy var envVars: [String: String] = loadDotEnv()
     private var deepgramKey: String { ProcessInfo.processInfo.environment["DEEPGRAM_API_KEY"] ?? envVars["DEEPGRAM_API_KEY"] ?? "" }
-    private var claudeKey: String { ProcessInfo.processInfo.environment["CLAUDE_API_KEY"] ?? envVars["CLAUDE_API_KEY"] ?? "" }
+    private var openrouterKey: String { ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] ?? envVars["OPENROUTER_API_KEY"] ?? "" }
 
     private func loadDotEnv() -> [String: String] {
         let candidates = [
@@ -37,7 +37,7 @@ final class CallController: ObservableObject {
     func startCall(session: CallSession) async {
         session.isRecording = true
 
-        coachEngine = CoachEngine(apiKey: claudeKey)
+        coachEngine = CoachEngine(apiKey: openrouterKey)
 
         // Set up Deepgram for microphone
         micDeepgram = DeepgramClient(apiKey: deepgramKey, speaker: .me)
