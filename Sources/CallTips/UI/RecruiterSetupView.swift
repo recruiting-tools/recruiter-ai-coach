@@ -18,6 +18,9 @@ struct RecruiterSetupView: View {
             HStack {
                 Label("Режим рекрутера", systemImage: "person.badge.plus")
                     .font(.headline)
+                Text("v0.5")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
                 Spacer()
                 if step == .plan {
                     Button("← Назад") { step = .input }
@@ -279,56 +282,37 @@ private struct DropZoneEditor: View {
     @State private var isFetching = false
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: $text)
+        ZStack {
+            NativeTextEditor(text: $text, placeholder: placeholder, onChange: maybeLoadURL)
                 .frame(height: height)
-                .font(.system(size: 12))
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
                 .opacity(isFetching ? 0.3 : 1)
                 .disabled(isFetching)
-                .onChange(of: text) { newValue in
-                    maybeLoadURL(newValue)
-                }
-
-            if text.isEmpty && !isFetching {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(placeholder)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                    Text("или перетащи PDF · DOCX · TXT · MD · URL")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.secondary.opacity(0.5))
-                }
-                .padding(6)
-                .allowsHitTesting(false)
-            }
 
             if isFetching {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
-                    Text("Загружаю страницу...").font(.caption).foregroundStyle(.secondary)
+                    Text("Загружаю...").font(.caption).foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .allowsHitTesting(false)
             }
         }
-        .padding(2)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isTargeted ? Color.accentColor.opacity(0.06) : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(isTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
-                        lineWidth: isTargeted ? 2 : 1)
+                .fill(Color(NSColor.textBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
+                                lineWidth: isTargeted ? 2 : 1)
+                )
         )
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in
             providers.first?.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
                 guard let data = item as? Data,
-                      let url = URL(dataRepresentation: data, relativeTo: nil),
-                      let extracted = DocumentExtractor.extract(from: url) else { return }
-                DispatchQueue.main.async { text = extracted }
+                      let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                Task.detached(priority: .userInitiated) {
+                    if let extracted = DocumentExtractor.extract(from: url) {
+                        await MainActor.run { text = extracted }
+                    }
+                }
             }
             return true
         }
@@ -342,25 +326,85 @@ private struct DropZoneEditor: View {
             isFetching = true
             Task {
                 let result = await DocumentExtractor.fetchURL(trimmed)
-                await MainActor.run {
-                    isFetching = false
-                    if let result { text = result }
-                }
+                await MainActor.run { isFetching = false; if let r = result { text = r } }
             }
         } else if trimmed.hasPrefix("/") {
-            // TextEditor intercepts file drops and pastes the path — extract it
             let url = URL(fileURLWithPath: trimmed)
-            let ext = url.pathExtension.lowercased()
-            guard ["pdf", "docx", "txt", "md", "markdown"].contains(ext) else { return }
+            guard ["pdf", "docx", "txt", "md", "markdown"].contains(url.pathExtension.lowercased()) else { return }
             isFetching = true
             Task.detached(priority: .userInitiated) {
                 let result = DocumentExtractor.extract(from: url)
-                await MainActor.run {
-                    isFetching = false
-                    if let result { text = result }
-                }
+                await MainActor.run { isFetching = false; if let r = result { text = r } }
             }
         }
+    }
+}
+
+// MARK: – Native NSTextView wrapper
+
+private struct NativeTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    let onChange: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let tv = ActivatingTextView()
+        tv.delegate = context.coordinator
+        tv.isRichText = false
+        tv.allowsUndo = true
+        tv.font = .systemFont(ofSize: 12)
+        tv.textColor = .labelColor
+        tv.backgroundColor = .clear
+        tv.drawsBackground = false
+        tv.textContainerInset = NSSize(width: 4, height: 6)
+        tv.textContainer?.lineFragmentPadding = 0
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.autoresizingMask = [.width]
+        tv.setValue(placeholder, forKey: "placeholderString")
+        tv.string = text
+
+        let sv = NSScrollView()
+        sv.documentView = tv
+        sv.backgroundColor = .clear
+        sv.drawsBackground = false
+        sv.hasVerticalScroller = false
+        sv.hasHorizontalScroller = false
+        sv.borderType = .noBorder
+        return sv
+    }
+
+    func updateNSView(_ sv: NSScrollView, context: Context) {
+        guard let tv = sv.documentView as? NSTextView,
+              !context.coordinator.isEditing,
+              tv.string != text else { return }
+        tv.string = text
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: NativeTextEditor
+        var isEditing = false
+        init(_ parent: NativeTextEditor) { self.parent = parent }
+
+        func textDidBeginEditing(_ notification: Notification) { isEditing = true }
+        func textDidEndEditing(_ notification: Notification)   { isEditing = false }
+
+        func textDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            parent.text = tv.string
+            parent.onChange(tv.string)
+        }
+    }
+}
+
+private final class ActivatingTextView: NSTextView {
+    override func mouseDown(with event: NSEvent) {
+        // Activate the app so keyboard events (Cmd+V etc.) come here
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKey()
+        super.mouseDown(with: event)
     }
 }
 

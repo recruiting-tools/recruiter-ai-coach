@@ -3,50 +3,59 @@ import SwiftUI
 
 @MainActor
 final class SetupWindowController: NSObject, NSWindowDelegate {
-    private var panel: NSPanel?
+    private var window: NSWindow?
 
     func toggle(session: CallSession, apiKey: String, onStart: @escaping () -> Void) {
-        if let p = panel {
-            p.isVisible ? p.orderOut(nil) : p.orderFrontRegardless()
+        if let w = window {
+            if w.isVisible { w.orderOut(nil) } else { activate(w) }
             return
         }
         build(session: session, apiKey: apiKey, onStart: onStart)
     }
 
-    func show()  { panel?.orderFrontRegardless() }
-    func hide()  { panel?.orderOut(nil) }
+    func show() { if let w = window { activate(w) } }
+    func hide() {
+        window?.orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    private func activate(_ w: NSWindow) {
+        NSApp.setActivationPolicy(.regular)
+        w.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
 
     private func build(session: CallSession, apiKey: String, onStart: @escaping () -> Void) {
         let root = RecruiterSetupView(session: session, apiKey: apiKey, onStart: onStart)
         let hosting = NSHostingView(rootView: root)
 
-        let p = NSPanel(
+        let w = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 460, height: 100),
-            styleMask: [.borderless],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        p.contentView = hosting
-        p.delegate = self
-        p.level = .floating
-        p.isOpaque = false
-        p.backgroundColor = NSColor.windowBackgroundColor
-        p.hasShadow = true
-        p.hidesOnDeactivate = false
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        p.isMovableByWindowBackground = true
+        w.contentView = hosting
+        w.delegate = self
+        w.title = "Call Tips"
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.isMovableByWindowBackground = true
+        w.level = .floating
+        w.hidesOnDeactivate = false
+        w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         let sz = hosting.fittingSize
-        p.setContentSize(sz)
+        w.setContentSize(sz)
 
         if let screen = NSScreen.main {
             let x = screen.visibleFrame.maxX - sz.width - 20
             let y = screen.visibleFrame.maxY - sz.height - 8
-            p.setFrameOrigin(NSPoint(x: x, y: y))
+            w.setFrameOrigin(NSPoint(x: x, y: y))
         }
 
-        p.makeKeyAndOrderFront(nil)
-        panel = p
+        activate(w)
+        window = w
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
