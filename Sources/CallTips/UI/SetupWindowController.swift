@@ -31,7 +31,7 @@ final class SetupWindowController: NSObject, NSWindowDelegate {
 
         let w = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 460, height: 100),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )

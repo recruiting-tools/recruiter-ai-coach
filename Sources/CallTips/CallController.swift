@@ -106,7 +106,7 @@ final class CallController: ObservableObject {
 
     func stopCall() async {
         micCapture.stop()
-        speakerCapture.stop()
+        await speakerCapture.stop()
         micDeepgram?.disconnect()
         speakerDeepgram?.disconnect()
         micDeepgram     = nil

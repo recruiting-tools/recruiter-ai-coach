@@ -31,9 +31,11 @@ final class SpeakerCapture: NSObject {
         try await stream?.startCapture()
     }
 
-    func stop() {
-        Task { try? await stream?.stopCapture() }
+    func stop() async {
+        onAudioChunk = nil
+        let s = stream
         stream = nil
+        try? await s?.stopCapture()
     }
 
     enum CaptureError: Error {
