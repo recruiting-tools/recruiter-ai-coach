@@ -378,21 +378,21 @@ private struct NativeTextEditor: NSViewRepresentable {
 
     func updateNSView(_ sv: NSScrollView, context: Context) {
         guard let tv = sv.documentView as? NSTextView,
-              !context.coordinator.isEditing,
               tv.string != text else { return }
+        // Programmatic update (e.g. URL fetch result) — push into the view
+        // even if user is "editing"; suppress the delegate echo to avoid loop.
+        context.coordinator.isSetting = true
         tv.string = text
+        context.coordinator.isSetting = false
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: NativeTextEditor
-        var isEditing = false
+        var isSetting = false
         init(_ parent: NativeTextEditor) { self.parent = parent }
 
-        func textDidBeginEditing(_ notification: Notification) { isEditing = true }
-        func textDidEndEditing(_ notification: Notification)   { isEditing = false }
-
         func textDidChange(_ notification: Notification) {
-            guard let tv = notification.object as? NSTextView else { return }
+            guard !isSetting, let tv = notification.object as? NSTextView else { return }
             parent.text = tv.string
             parent.onChange(tv.string)
         }
