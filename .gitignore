@@ -4,3 +4,6 @@
 *.o
 *.d
 .env
+CallTips.app/
+*.app/
+.swiftpm/

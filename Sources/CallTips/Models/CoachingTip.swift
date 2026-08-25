@@ -7,49 +7,39 @@ struct CoachingTip: Identifiable {
     let timestamp: Date
 
     enum TipType {
-        case quickStart    // ⚡ первые слова / следующий вопрос
-        case main          // 📝 полный ответ / углублённый вопрос
-        case clarify       // ❓ уточнение
+        case quickStart   // ⚡ следующий вопрос из плана
+        case main         // 📝 углублённый вопрос-проверка
+        case clarify      // ❓ уточнение
 
         var icon: String {
+            switch self { case .quickStart: "⚡"; case .main: "📝"; case .clarify: "❓" }
+        }
+        var label: String {
             switch self {
-            case .quickStart: return "⚡"
-            case .main:       return "📝"
-            case .clarify:    return "❓"
+            case .quickStart: return "Следующий вопрос"
+            case .main:       return "Углубить"
+            case .clarify:    return "Уточнить"
             }
         }
-
-        func label(for callType: CallType) -> String {
-            switch (self, callType) {
-            case (.quickStart, .recruiterInterview): return "Следующий вопрос"
-            case (.quickStart, _):                   return "Быстрый старт"
-            case (.main, .recruiterInterview):       return "Углубить"
-            case (.main, _):                         return "Полный ответ"
-            case (.clarify, _):                      return "Уточнение"
-            }
+        var color: String {  // used in SwiftUI via extension
+            switch self { case .quickStart: "green"; case .main: "orange"; case .clarify: "blue" }
         }
     }
 }
-
-// MARK: - Decodable response from AI
 
 struct TipsResponse: Decodable {
     let quickStart: String
     let main: String
     let clarify: String
 
-    func toTips(callType: CallType) -> [CoachingTip] {
+    func toTips() -> [CoachingTip] {
         let now = Date()
-        var result: [CoachingTip] = []
-        if !quickStart.trimmingCharacters(in: .whitespaces).isEmpty {
-            result.append(CoachingTip(type: .quickStart, text: quickStart, timestamp: now))
-        }
-        if !main.trimmingCharacters(in: .whitespaces).isEmpty {
-            result.append(CoachingTip(type: .main, text: main, timestamp: now))
-        }
-        if !clarify.trimmingCharacters(in: .whitespaces).isEmpty {
-            result.append(CoachingTip(type: .clarify, text: clarify, timestamp: now))
-        }
-        return result
+        return [
+            ("quickStart", CoachingTip.TipType.quickStart, quickStart),
+            ("main",       .main,       main),
+            ("clarify",    .clarify,    clarify),
+        ]
+        .filter { !$2.trimmingCharacters(in: .whitespaces).isEmpty }
+        .map    { CoachingTip(type: $1, text: $2, timestamp: now) }
     }
 }

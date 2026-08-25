@@ -98,7 +98,7 @@ struct OverlayView: View {
                 }
             } else {
                 ForEach(session.latestTips) { tip in
-                    TipCard(tip: tip, callType: session.callType)
+                    TipCard(tip: tip)
                 }
             }
         }
@@ -133,7 +133,6 @@ struct OverlayView: View {
 
 private struct TipCard: View {
     let tip: CoachingTip
-    let callType: CallType
 
     private var accentColor: Color {
         switch tip.type {
@@ -148,7 +147,7 @@ private struct TipCard: View {
             HStack(spacing: 5) {
                 Text(tip.type.icon)
                     .font(.system(size: 11))
-                Text(tip.type.label(for: callType).uppercased())
+                Text(tip.type.label.uppercased())
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundStyle(accentColor)
                     .tracking(0.6)
