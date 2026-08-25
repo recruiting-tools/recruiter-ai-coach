@@ -1,0 +1,85 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app bundle
+        run: |
+          set -e
+          swift build -c release
+
+          APP=CallTips.app
+          mkdir -p "$APP/Contents/MacOS"
+          mkdir -p "$APP/Contents/Resources"
+
+          cp .build/release/CallTips "$APP/Contents/MacOS/CallTips"
+
+          # Info.plist
+          VERSION="${GITHUB_REF_NAME#v}"
+          cat > "$APP/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key><string>CallTips</string>
+            <key>CFBundleIdentifier</key><string>com.recruiting-tools.calltips</string>
+            <key>CFBundleName</key><string>Call Tips</string>
+            <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+            <key>CFBundleVersion</key><string>${VERSION}</string>
+            <key>LSMinimumSystemVersion</key><string>13.0</string>
+            <key>LSUIElement</key><true/>
+            <key>NSMicrophoneUsageDescription</key><string>Call Tips needs microphone access to transcribe your voice during interviews.</string>
+            <key>NSScreenCaptureDescription</key><string>Call Tips needs screen recording access to capture system audio from Zoom/Teams/Meet.</string>
+          </dict>
+          </plist>
+          EOF
+
+          # App icon if exists
+          if [ -d "Assets.xcassets/AppIcon.appiconset" ]; then
+            cp -r "Assets.xcassets/AppIcon.appiconset" "$APP/Contents/Resources/" || true
+          fi
+          if [ -f "Resources/AppIcon.icns" ]; then
+            cp "Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$APP/Contents/Info.plist" || \
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "$APP/Contents/Info.plist"
+          fi
+
+          # .env.example
+          cat > "$APP/Contents/Resources/.env.example" <<'EOF'
+          DEEPGRAM_API_KEY=your_deepgram_key_here
+          OPENROUTER_API_KEY=your_openrouter_key_here
+          EOF
+
+          # Zip
+          ZIP="CallTips-${GITHUB_REF_NAME}.zip"
+          zip -r "$ZIP" "$APP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Call Tips ${{ github.ref_name }}"
+          body: |
+            ## Установка
+
+            1. Скачай `CallTips-${{ github.ref_name }}.zip`
+            2. Разархивируй → перемести `CallTips.app` в `/Applications`
+            3. Первый запуск: **правая кнопка → Открыть**
+            4. Создай файл `.env` в `CallTips.app/Contents/Resources/`:
+            ```
+            DEEPGRAM_API_KEY=ключ_от_deepgram
+            OPENROUTER_API_KEY=ключ_от_openrouter
+            ```
+            5. Запусти — иконка 👤+ появится в строке меню
+          files: ${{ env.ZIP }}
+          draft: false
+          prerelease: false
